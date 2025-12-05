@@ -7,9 +7,16 @@ function string_utils.split(s, delim)
 	while delim_pos do
 		delim_pos = s:find(delim, begin, true)
 		if delim_pos then
-			table.insert(result, s:sub(begin, delim_pos - 1))
+			local substring = s:sub(begin, delim_pos - 1)
+			if #substring > 0 then
+				table.insert(result, substring)
+			end
 			begin = delim_pos + 1
 		end
+	end
+	local substring = s:sub(begin, #s)
+	if #substring > 0 then
+		table.insert(result, substring)
 	end
 	return result
 end
