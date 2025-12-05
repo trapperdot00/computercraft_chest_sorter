@@ -13,7 +13,6 @@ function options.parse(args)
     setmetatable(self, options)
     for i = 1, #args do
         local arg = args[i]
-        print(i, arg)
         if arg == "--sort" then
             self["sort"] = true
         elseif arg == "--pull" then
