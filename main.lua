@@ -20,7 +20,7 @@ local function main()
     local opts      = options.parse()
     
     -- Select appropriate work for command-line arguments
-    wd.delegate(opts, rows, items, inputs)
+    wd.delegate(pwd, opts, rows, items, inputs)
 end
 
 main()

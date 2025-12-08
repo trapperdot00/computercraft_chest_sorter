@@ -5,6 +5,7 @@ function options.parse()
     local opts = {
         sort            = false,
         pull            = false,
+        refresh         = false,
         get_items       = {},
         print_rows      = false,
         print_items     = false,
@@ -16,6 +17,8 @@ function options.parse()
             opts["sort"] = true
         elseif curr_arg == "--pull" then
             opts["pull"] = true
+        elseif curr_arg == "--refresh" then
+            opts["refresh"] = true
         elseif curr_arg:find("--get-items", 1, true) then
             local equal_pos = curr_arg:find('=', 1, true) + 1
             opts["get_items"] = str.split(curr_arg:sub(equal_pos), ',')
