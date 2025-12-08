@@ -7,6 +7,7 @@ function options.parse()
         pull            = false,
         refresh         = false,
         get_items       = {},
+        item_count      = {},
         print_rows      = false,
         print_items     = false,
         print_inputs    = false
@@ -22,6 +23,9 @@ function options.parse()
         elseif curr_arg:find("--get-items", 1, true) then
             local equal_pos = curr_arg:find('=', 1, true) + 1
             opts["get_items"] = str.split(curr_arg:sub(equal_pos), ',')
+        elseif curr_arg:find("--item-count", 1, true) then
+            local equal_pos = curr_arg:find('=', 1, true) + 1
+            opts["item_count"] = str.split(curr_arg:sub(equal_pos), ',')
         elseif curr_arg == "--print-rows" then
             opts["print_rows"] = true
         elseif curr_arg == "--print-items" then
