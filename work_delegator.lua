@@ -18,11 +18,9 @@ local function get_items(rows, items, inputs, sought_items)
 end
 
 local function refresh_database(pwd)
-    local file = io.open(pwd .. "items.data", "w")
+    local filename = pwd .. "items.data"
     local contents = chest_parser.get_chest_contents()
-    local serialized = textutils.serialize(contents)
-    file:write(serialized)
-    file:close()
+    chest_parser.write_to_file(contents, filename)
 end
 
 local function print_rows(rows)
