@@ -27,7 +27,7 @@ end
 
 local function refresh_database(pwd)
     local filename = pwd .. "items.data"
-    local contents = chest_parser.get_chest_contents()
+    local contents = chest_parser.read_from_chests()
     chest_parser.write_to_file(contents, filename)
 end
 

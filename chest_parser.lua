@@ -1,6 +1,7 @@
 local chest_parser = {}
 
-function chest_parser.get_chest_contents()
+-- 
+function chest_parser.read_from_chests()
 	local chests = { peripheral.find("minecraft:chest") }
 	local contents = {}
 	for _, chest in ipairs(chests) do
