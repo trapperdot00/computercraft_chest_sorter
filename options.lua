@@ -3,35 +3,29 @@ local options = {}
 
 function options.parse()
     local opts = {
-        sort            = false,
+        push            = false,
         pull            = false,
-        refresh         = false,
-        get_items       = {},
-        item_count      = {},
-        print_rows      = false,
-        print_items     = false,
+        scan            = false,
+        get             = {},
+        count           = {},
         print_inputs    = false
     }
     for i = 1, #arg do
         local curr_arg = arg[i]
-        if curr_arg == "--sort" then
-            opts["sort"] = true
+        if curr_arg == "--push" then
+            opts.push = true
         elseif curr_arg == "--pull" then
-            opts["pull"] = true
-        elseif curr_arg == "--refresh" then
-            opts["refresh"] = true
-        elseif curr_arg:find("--get-items", 1, true) then
+            opts.pull = true
+        elseif curr_arg == "--scan" then
+            opts.scan = true
+        elseif curr_arg:find("--get", 1, true) then
             local equal_pos = curr_arg:find('=', 1, true) + 1
-            opts["get_items"] = str.split(curr_arg:sub(equal_pos), ',')
-        elseif curr_arg:find("--item-count", 1, true) then
+            opts.get = str.split(curr_arg:sub(equal_pos), ',')
+        elseif curr_arg:find("--count", 1, true) then
             local equal_pos = curr_arg:find('=', 1, true) + 1
-            opts["item_count"] = str.split(curr_arg:sub(equal_pos), ',')
-        elseif curr_arg == "--print-rows" then
-            opts["print_rows"] = true
-        elseif curr_arg == "--print-items" then
-            opts["print_items"] = true
+            opts.count = str.split(curr_arg:sub(equal_pos), ',')
         elseif curr_arg == "--print-inputs" then
-            opts["print_inputs"] = true
+            opts.print_inputs = true
         end
     end
     return opts

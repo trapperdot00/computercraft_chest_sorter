@@ -138,7 +138,7 @@ end
 -- 2 {
 --     "minecraft:chest_3"
 -- }
-function config_reader.read_config_file_assoc(filename, key_prefix)
+function config_reader.read_assoc(filename, key_prefix)
     local conf = {}
     local file = io.open(filename)
     while true do
@@ -169,7 +169,7 @@ end
 -- Section  ::= '{' ItemList '}'
 -- ItemList ::= Item | Item ',' ItemList
 -- Item     ::= '"' <string> '"' | ""
-function config_reader.read_config_file_seque(filename, key_prefix)
+function config_reader.read_seque(filename, key_prefix)
     local conf = {}
     local file = io.open(filename)
     local starter = config_reader.read_next_nonspace_char(file)

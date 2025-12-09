@@ -36,5 +36,6 @@ function Inventory:item_count(sought_item)
     return count
 end
 
+function Inventory:
 
 return Inventory
