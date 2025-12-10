@@ -1,3 +1,4 @@
+local tbl          = require("table_utils")
 local chest_parser = require("chest_parser")
 
 local Inventory = {}
@@ -7,6 +8,7 @@ function Inventory.new(inputs, filename)
     local self = setmetatable({}, Inventory)
     self.inputs   = inputs
     self.filename = filename
+    self.contents = nil
     return self
 end
 
@@ -21,23 +23,12 @@ function Inventory:load()
     end
 end
 
-local function get_table_size(tbl)
-    local count = 0
-    for _ in pairs(tbl) do
-        count = count + 1
-    end
-    return count
-end
-
-function Inventory:push()
-    self:load()
-
-    -- Pre-calculate viable output chests
+function Inventory:get_nonfull_chests()
     local dests   = {}
     local empties = {}
     for output_id, contents in pairs(self.contents) do
         if not self:is_input_chest(output_id) then
-            local occupied = get_table_size(contents.items)
+            local occupied = tbl.size(contents.items)
             local empty    = contents.size - occupied
             if empty > 0 then
                 table.insert(dests, output_id)
@@ -45,6 +36,14 @@ function Inventory:push()
             end
         end
     end
+    return { dests, empties }
+end
+
+function Inventory:push()
+    self:load()
+
+    -- Pre-calculate viable output chests
+    local dests, empties = table.unpack(self:get_nonfull_chests())
     if #dests == 0 then
         print("0 empty slots in output chests!")
         return
@@ -88,25 +87,29 @@ function Inventory:push()
     end
     
     print("Commiting changes to file.")
-    chest_parser.write_to_file(self.contents, self.filename)
+    self:save_contents()
 end
 
 function Inventory:scan()
     self.contents = chest_parser.read_from_chests()
-    chest_parser.write_to_file(self.contents, self.filename)
+    self:save_contents()
 end
 
 function Inventory:scan_inputs()
     for _, chest_name in ipairs(self.inputs) do
         self:update_contents(chest_name)
     end
-    chest_parser.write_to_file(self.contents, self.filename)
+    self:save_contents()
 end
 
 function Inventory:update_contents(chest_id)
     local chest = peripheral.wrap(chest_id)
     local chest_data = { size = chest.size(), items = chest.list() }
     self.contents[chest_id] = chest_data
+end
+
+function Inventory:save_contents()
+    chest_parser.write_to_file(self.contents, self.filename)
 end
 
 function Inventory:is_input_chest(chest_id)
@@ -127,7 +130,8 @@ function Inventory:has_empty_slot(chest_id)
     return count ~= size
 end
 
-function Inventory:item_count(sought_item)
+function Inventory:count(sought_item)
+    self:load()
     local count = 0
     for chest_name, content in pairs(self.contents) do
         for slot, item in pairs(content) do

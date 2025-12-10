@@ -1,10 +1,9 @@
 local debugger          = require("debugger")
 local work_delegator    = {}
 
-local function item_count(sought_items, inventory)
-    inventory:load()
+local function count_items(inventory, sought_items)
     for _, sought_item in pairs(sought_items) do
-        local count = inventory:item_count(sought_item)
+        local count = inventory:count(sought_item)
         print(sought_item, count)
     end
 end
@@ -31,7 +30,7 @@ function work_delegator.delegate(options, inventory)
     elseif #options.get > 0 then
         inventory:get()
     elseif #options.count > 0 then
-        inventory:count()
+        count_items(inventory, options.count)
     elseif options.print_inputs then
         print_inputs(inventory)
     else
