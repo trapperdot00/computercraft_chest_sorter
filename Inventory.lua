@@ -39,19 +39,7 @@ function Inventory:get_nonfull_chests()
     return { dests, empties }
 end
 
-function Inventory:push()
-    self:load()
-
-    -- Pre-calculate viable output chests
-    local dests, empties = table.unpack(self:get_nonfull_chests())
-    if #dests == 0 then
-        print("0 empty slots in output chests!")
-        return
-    end
-    print(#dests .. " viable output chests.")
-
-    -- Push items to output chests
-    print("Starting push.")
+function Inventory:do_push(dests, empties)
     local pushed = 0
     local dest_i = 1
     for _, input_id in ipairs(self.inputs) do
@@ -72,16 +60,32 @@ function Inventory:push()
             end
         end
     end
+	return { pushed, dest_i }
+end
+
+function Inventory:push()
+    self:load()
+
+    -- Pre-calculate viable output chests
+    local dests, empties = table.unpack(self:get_nonfull_chests())
+    if #dests == 0 then
+        print("0 empty slots in output chests!")
+        return
+    end
+    print(#dests .. " viable output chests.")
+
+    -- Push items to output chests
+    print("Starting push.")
+	local pushed, dest_i = table.unpack(self:do_push(dests, empties))
     print("Pushed " .. pushed .. " slots.")
 
     if pushed == 0 then return end
-    local n = dest_i
     if dest_i > #dests then
-        n = #dests
+        dest_i = #dests
     end
 
     print("Updating chest database in memory.")
-    for i=1, n do
+    for i=1, dest_i do
         local chest_name = dests[i]
         self:update_contents(chest_name)
     end
