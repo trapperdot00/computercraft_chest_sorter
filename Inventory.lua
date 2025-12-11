@@ -79,9 +79,12 @@ end
 
 function Inventory:do_push(output_names, free_slots_list)
     local pushed   = 0
+    local input_i  = 1
     local output_i = 1
-    for _, input_id in ipairs(self.inputs) do
-        local input = peripheral.wrap(input_id)
+    while input_i  <= #self.inputs
+    and   output_i <= #output_names do
+        local input_id   = self.inputs[input_i]
+        local input      = peripheral.wrap(input_id)
         local input_data = self.contents[input_id]
         for slot, item in pairs(input_data.items) do
             if input.pushItems(output_names[output_i], slot) > 0 then
@@ -91,9 +94,9 @@ function Inventory:do_push(output_names, free_slots_list)
                     output_i = output_i + 1
                 end
                 if output_i > #output_names then break end
-                output = peripheral.wrap(output_names[output_i])
             end
         end
+        input_i = input_i + 1
     end
     return { pushed, output_i }
 end
@@ -103,7 +106,7 @@ function Inventory:do_pull(input, output)
     local input_i  = 1
     local output_i = 1
     while output_i <= #output.names
-      and input_i  <= #input.names do
+    and   input_i  <= #input.names do
         local output_name = output.names[output_i]
         local slots       = output.slots[output_i]
         for _, slot in ipairs(slots) do
@@ -170,7 +173,6 @@ function Inventory:pull()
     )
     print("Pulled " .. pulled .. " slots.")
 
-    print(pulled)
     if pulled == 0 then return end
     if output_i > #output.names then
         output_i = #output.names
