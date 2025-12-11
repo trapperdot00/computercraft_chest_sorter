@@ -28,7 +28,7 @@ function work_delegator.delegate(options, inventory)
     elseif options.scan then
         inventory:scan()
     elseif #options.get > 0 then
-        inventory:get()
+        inventory:get(options.get)
     elseif #options.count > 0 then
         count_items(inventory, options.count)
     elseif options.print_inputs then
