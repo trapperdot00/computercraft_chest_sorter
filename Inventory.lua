@@ -23,76 +23,79 @@ function Inventory:load()
     end
 end
 
-function Inventory:get_nonfull_chests()
-    local dests   = {}
-    local empties = {}
-    for output_id, contents in pairs(self.contents) do
-        if not self:is_input_chest(output_id) then
-            local occupied = tbl.size(contents.items)
-            local empty    = contents.size - occupied
-            if empty > 0 then
-                table.insert(dests, output_id)
-                table.insert(empties, empty)
+-- Viable outputs: output chests with at least one free slot
+function Inventory:get_viable_push_chests()
+    local output_names    = {}
+    local free_slots_list = {}
+    for output_name, contents in pairs(self.contents) do
+        if not self:is_input_chest(output_name) then
+            local nonfree_slots = tbl.size(contents.items)
+            local free_slots    = contents.size - nonfree_slots
+            if free_slots > 0 then
+                table.insert(output_names, output_name)
+                table.insert(free_slots_list, free_slots)
             end
         end
     end
-    return { dests, empties }
+    return { output_names, free_slots_list }
 end
 
-function Inventory:do_push(dests, empties)
-    local pushed = 0
-    local dest_i = 1
+-- Viable inputs:  input chests with at least 1 free slot
+-- Viable outputs: output chests with at least 1 non-free slot
+function Inventory:get_viable_pull_chests()
+    local input_names  = {}
+    local input_slots  = {} -- Empty slot counts
+    local output_names = {}
+    local output_slots = {} -- Lists of full slots
+    for chest_name, contents in pairs(self.contents) do
+        local full_slots = tbl.size(contents.items)
+        if self:is_input_chest(chest_name) then
+            if contents.size > full_slots then
+                local empty_slots = contents.size - full_slots
+                table.insert(input_names, chest_name)
+                table.insert(input_slots, empty_slots)
+            end
+        else
+            if full_slots > 0 then
+                table.insert(output_names, chest_name)
+                local slots = {}
+                for slot, item in pairs(contents.items) do
+                    table.insert(slots, slot)
+                end
+                table.insert(output_slots, slots)
+            end
+        end
+    end
+    local input = {
+        names = input_names,
+        slots = input_slots
+    }
+    local output = {
+        names = output_names,
+        slots = output_slots
+    }
+    return { input, output }
+end
+
+function Inventory:do_push(output_names, free_slots_list)
+    local pushed   = 0
+    local output_i = 1
     for _, input_id in ipairs(self.inputs) do
         local input = peripheral.wrap(input_id)
         local input_data = self.contents[input_id]
         for slot, item in pairs(input_data.items) do
-            if input.pushItems(dests[dest_i], slot) > 0 then
+            if input.pushItems(output_names[output_i], slot) > 0 then
                 pushed = pushed + 1
-                empties[dest_i] = empties[dest_i] - 1
-                if empties[dest_i] == 0 then
-                    dest_i = dest_i + 1
+                free_slots_list[output_i] = free_slots_list[output_i] - 1
+                if free_slots_list[output_i] == 0 then
+                    output_i = output_i + 1
                 end
-                if dest_i > #dests then
-                    print("No space for remaining items!")
-                    break
-                end
-                output = peripheral.wrap(dests[dest_i])
+                if output_i > #output_names then break end
+                output = peripheral.wrap(output_names[output_i])
             end
         end
     end
-    return { pushed, dest_i }
-end
-
-function Inventory:push()
-    self:load()
-
-    -- Pre-calculate viable output chests
-    local dests, empties = table.unpack(self:get_nonfull_chests())
-    if #dests == 0 then
-        print("0 empty slots in output chests!")
-        return
-    end
-    print(#dests .. " viable output chests.")
-
-    -- Push items to output chests
-    print("Starting push.")
-    local pushed, dest_i = table.unpack(self:do_push(dests, empties))
-    print("Pushed " .. pushed .. " slots.")
-
-    if pushed == 0 then return end
-    if dest_i > #dests then
-        dest_i = #dests
-    end
-
-    print("Updating chest database in memory.")
-    for i=1, dest_i do
-        local chest_name = dests[i]
-        print("Updating " .. chest_name)
-        self:update_contents(chest_name)
-    end
-    
-    print("Commiting changes to file.")
-    self:save_contents()
+    return { pushed, output_i }
 end
 
 function Inventory:do_pull(input, output)
@@ -118,75 +121,70 @@ function Inventory:do_pull(input, output)
     return { pulled, output_i }
 end
 
-function Inventory:pull()
+function Inventory:push()
     self:load()
 
-    -- Get viable input and output chests
-    -- Viable inputs:  input chests with at least 1 free slot
-    -- Viable outputs: output chests with at least 1 non-free slot
-    local input_names  = {}
-    local input_slots  = {} -- Empty slot counts
-    local output_names = {}
-    local output_slots = {} -- Lists of full slots
-    for chest_name, contents in pairs(self.contents) do
-        local full_slots = tbl.size(contents.items)
-        if self:is_input_chest(chest_name) then
-            if contents.size > full_slots then
-                local empty_slots = contents.size - full_slots
-                table.insert(input_names, chest_name)
-                table.insert(input_slots, empty_slots)
-            end
-        else
-            if full_slots > 0 then
-                table.insert(output_names, chest_name)
-                local slots = {}
-                for slot, item in pairs(contents.items) do
-                    table.insert(slots, slot)
-                end
-                table.insert(output_slots, slots)
-            end
-        end
-    end
-    local input  = {
-        names = input_names,
-        slots = input_slots
-    }
-    local output = {
-        names = output_names,
-        slots = output_slots
-    }
+    print("Calculating viable chests.")
+    local output_names, free_slots_list = table.unpack(
+        self:get_viable_push_chests()
+    )
+    print(#output_names .. " viable output chests.")
+    if #output_names == 0 then return end
 
-    -- Do item pulling
-    print("Starting pull.")
-    local pulled, output_i = table.unpack(self:do_pull(input, output))
-    print("Pulled " .. pulled .. " slots.")
+    print("Starting push.")
+    local pushed, output_i = table.unpack(
+        self:do_push(output_names, free_slots_list)
+    )
+    print("Pushed " .. pushed .. " slots.")
 
+    if pushed == 0 then return end
     if output_i > #output_names then
         output_i = #output_names
     end
 
     print("Updating chest database in memory.")
-    for i = 1, output_i do
+    for i=1, output_i do
         local chest_name = output_names[i]
         print("Updating " .. chest_name)
         self:update_contents(chest_name)
     end
-
-    print("Commiting changes to file.")
+    
+    print("Commiting changes to file '" .. self.filename .. "'.")
     self:save_contents()
+end
 
+function Inventory:pull()
+    self:load()
 
---    print("viable inputs:")
---    for i=1, #input_names do
---        print(input_names[i], input_slots[i])
---    end
---    print("viable outputs:")
---    for i=1, #output_names do
---        print(output_names[i])
---        for _, slot in ipairs(output_slots[i]) do
---            print(slot)
---        end
---    end
+    print("Calculating viable chests.")
+    local input, output = table.unpack(
+        self:get_viable_pull_chests()
+    )
+    print(#input.names  .. " viable input chests.")
+    print(#output.names .. " viable output chests.")
+    if #input.names == 0 or #output.names == 0 then return end
+
+    print("Starting pull.")
+    local pulled, output_i = table.unpack(
+        self:do_pull(input, output)
+    )
+    print("Pulled " .. pulled .. " slots.")
+
+    print(pulled)
+    if pulled == 0 then return end
+    if output_i > #output.names then
+        output_i = #output.names
+    end
+
+    print("Updating chest database in memory.")
+    for i = 1, output_i do
+        local chest_name = output.names[i]
+        print("Updating " .. chest_name)
+        self:update_contents(chest_name)
+    end
+
+    print("Commiting changes to file '" .. self.filename .. "'.")
+    self:save_contents()
 end
 
 function Inventory:scan()
