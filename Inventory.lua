@@ -60,7 +60,7 @@ function Inventory:do_push(dests, empties)
             end
         end
     end
-	return { pushed, dest_i }
+    return { pushed, dest_i }
 end
 
 function Inventory:push()
@@ -76,7 +76,7 @@ function Inventory:push()
 
     -- Push items to output chests
     print("Starting push.")
-	local pushed, dest_i = table.unpack(self:do_push(dests, empties))
+    local pushed, dest_i = table.unpack(self:do_push(dests, empties))
     print("Pushed " .. pushed .. " slots.")
 
     if pushed == 0 then return end
@@ -92,6 +92,65 @@ function Inventory:push()
     
     print("Commiting changes to file.")
     self:save_contents()
+end
+
+function Inventory:pull()
+    self:load()
+
+    -- Get viable input and output chests
+    -- Viable inputs:  input chests with at least 1 free slot
+    -- Viable outputs: output chests with at least 1 non-free slot
+    local input_names  = {}
+    local input_slots  = {} -- Empty slot counts
+    local output_names = {}
+    local output_slots = {} -- Lists of full slots
+    for chest_name, contents in pairs(self.contents) do
+        local full_slots = tbl.size(contents.items)
+        if self:is_input_chest(chest_name) then
+            if contents.size > full_slots then
+                local empty_slots = contents.size - full_slots
+                table.insert(input_names, chest_name)
+                table.insert(input_slots, empty_slots)
+            end
+        else
+            if full_slots > 0 then
+                table.insert(output_names, chest_name)
+                local slots = {}
+                for slot, item in pairs(contents.items) do
+                    table.insert(slots, slot)
+                end
+                table.insert(output_slots, slots)
+            end
+        end
+    end
+
+    local input_i = 1
+    local output_i = 1
+    while output_i <= #output_names
+      and input_i  <= #input_names do
+        local output_name = output_names[output_i]
+        local slots       = output_slots[output_i]
+        for _, slot in ipairs(slots) do
+            local input = peripheral.wrap(input_names[input_i])
+            input.pullItems(output_name, slot)
+            input_slots[input_i] = input_slots[input_i] - 1
+            if input_slots[input_i] == 0 then
+                input_i = input_i + 1
+            end
+        end
+    end
+
+--    print("viable inputs:")
+--    for i=1, #input_names do
+--        print(input_names[i], input_slots[i])
+--    end
+--    print("viable outputs:")
+--    for i=1, #output_names do
+--        print(output_names[i])
+--        for _, slot in ipairs(output_slots[i]) do
+--            print(slot)
+--        end
+--    end
 end
 
 function Inventory:scan()
