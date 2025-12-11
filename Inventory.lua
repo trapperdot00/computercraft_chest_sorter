@@ -87,11 +87,35 @@ function Inventory:push()
     print("Updating chest database in memory.")
     for i=1, dest_i do
         local chest_name = dests[i]
+        print("Updating " .. chest_name)
         self:update_contents(chest_name)
     end
     
     print("Commiting changes to file.")
     self:save_contents()
+end
+
+function Inventory:do_pull(input, output)
+    local pulled   = 0
+    local input_i  = 1
+    local output_i = 1
+    while output_i <= #output.names
+      and input_i  <= #input.names do
+        local output_name = output.names[output_i]
+        local slots       = output.slots[output_i]
+        for _, slot in ipairs(slots) do
+            local input_chest = peripheral.wrap(input.names[input_i])
+            if input_chest.pullItems(output_name, slot) > 0 then
+                pulled = pulled + 1
+            end
+            input.slots[input_i] = input.slots[input_i] - 1
+            if input.slots[input_i] == 0 then
+                input_i = input_i + 1
+            end
+        end
+        output_i = output_i + 1
+    end
+    return { pulled, output_i }
 end
 
 function Inventory:pull()
@@ -123,28 +147,18 @@ function Inventory:pull()
             end
         end
     end
+    local input  = {
+        names = input_names,
+        slots = input_slots
+    }
+    local output = {
+        names = output_names,
+        slots = output_slots
+    }
 
     -- Do item pulling
     print("Starting pull.")
-    local pulled   = 0
-    local input_i  = 1
-    local output_i = 1
-    while output_i <= #output_names
-      and input_i  <= #input_names do
-        local output_name = output_names[output_i]
-        local slots       = output_slots[output_i]
-        for _, slot in ipairs(slots) do
-            local input = peripheral.wrap(input_names[input_i])
-            if input.pullItems(output_name, slot) > 0 then
-                pulled = pulled + 1
-            end
-            input_slots[input_i] = input_slots[input_i] - 1
-            if input_slots[input_i] == 0 then
-                input_i = input_i + 1
-            end
-        end
-        output_i = output_i + 1
-    end
+    local pulled, output_i = table.unpack(self:do_pull(input, output))
     print("Pulled " .. pulled .. " slots.")
 
     if output_i > #output_names then
