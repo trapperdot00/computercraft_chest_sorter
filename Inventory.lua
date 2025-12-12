@@ -128,7 +128,9 @@ function Inventory:do_push(output_names, free_slots_list)
 		local input		 = peripheral.wrap(input_id)
 		local input_data = self.contents[input_id]
 		for slot, item in pairs(input_data.items) do
-			if input.pushItems(output_names[output_i], slot) > 0 then
+			local output_name = output_names[output_i]
+			local pushed_count = input.pushItems(output_name, slot)
+			if pushed_count > 0 then
 				pushed = pushed + 1
 				free_slots_list[output_i] = free_slots_list[output_i] - 1
 				if free_slots_list[output_i] == 0 then
