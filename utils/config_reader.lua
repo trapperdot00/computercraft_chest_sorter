@@ -64,7 +64,10 @@ end
 -- remaining contents: ' five'
 function config_reader.read_quoted(file)
     local starter = config_reader.read_next_nonspace_char(file)
-    if starter ~= '"' then return nil end
+    if starter ~= '"' then
+        file:seek("cur", -1)
+        return nil
+    end
     local s = config_reader.read_until_char(file, "\"")
     if file:read(1) ~= "\"" then
         error("expected closing quote")
@@ -179,7 +182,7 @@ end
 -- returns a sequential table from its contents.
 -- Essentially a list of the quoted strings
 function config_reader.read_seque(filename, key_prefix)
-    local conf = {}
+    local conf
     local file = io.open(filename)
     local starter = config_reader.read_next_nonspace_char(file)
     if starter ~= "{" then
