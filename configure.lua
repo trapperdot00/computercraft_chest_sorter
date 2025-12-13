@@ -71,7 +71,7 @@ function configure.run()
         finish = 1,
         cursor = 1
     }
-    self.finish = self.height
+    self.finish = self.height - 3
     if self.finish > #self.chests then
         self.finish = #self.chests
     end
@@ -83,11 +83,13 @@ function configure.run()
                 self.cursor = self.cursor - 1
                 if self.start > 1 and self.start == self.cursor then
                     self.start = self.start - 1
+                    self.finish = self.finish - 1
                 end
             end
         elseif key == keys.down then
             if self.cursor < #self.chests then
                 if self.finish == self.cursor then
+                    self.start = self.start + 1
                     self.finish = self.finish + 1
                 end
                 self.cursor = self.cursor + 1
