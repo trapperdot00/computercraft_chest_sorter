@@ -6,7 +6,7 @@ local configure = {}
 local function draw_menu(self)
     local old_bg = term.getBackgroundColor()
     term.setBackgroundColor(self.menucolor)
-    print(str.pad("Chest Setup (DOESN'T WORK YET)", ' ', self.width))
+    print(str.pad("Chest Setup", ' ', self.width))
     term.setBackgroundColor(old_bg)
 end
 

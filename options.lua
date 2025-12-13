@@ -44,14 +44,31 @@ function options.parse()
     return self
 end
 
+function options:count_exclusives()
+    local count = 0
+    if self.push then count = count + 1 end
+    if self.pull then count = count + 1 end
+    if self.conf then count = count + 1 end
+    if #self.get   > 0 then count = count + 1 end
+    if #self.count > 0 then count = count + 1 end
+    return count
+end
+
+function options:count_nonexclusives()
+    local count = 0
+    if self.scan == true then
+        count = count + 1
+    end
+    if self.print_inputs == true then
+        count = count + 1
+    end
+    return count
+end
+
 function options:valid()
-    local excl_cnt = 0
-    if self.push then excl_cnt = excl_cnt + 1 end
-    if self.pull then excl_cnt = excl_cnt + 1 end
-    if self.conf then excl_cnt = excl_cnt + 1 end
-    if #self.get   > 0 then excl_cnt = excl_cnt + 1 end
-    if #self.count > 0 then excl_cnt = excl_cnt + 1 end
-    return excl_cnt <= 1
+    local excl   = self:count_exclusives()
+    local noexcl = self:count_nonexclusives()
+    return excl == 1 or noexcl > 0
 end
 
 return options

@@ -26,7 +26,7 @@ local function load_inputs(inputs_file)
 end
 
 function work_delegator.delegate(options, inputs_file, inventory_file)
-    if #arg == 0 or not options:valid() then
+    if not options:valid() then
         print_help()
         return
     end
