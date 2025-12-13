@@ -5,19 +5,16 @@ local configure = {}
 
 local function draw_menu(self)
     local old_bg = term.getBackgroundColor()
-    local bg     = colors.cyan
-    term.setBackgroundColor(bg)
+    term.setBackgroundColor(self.menucolor)
     print(str.pad("Chest Setup (DOESN'T WORK YET)", ' ', self.width))
     term.setBackgroundColor(old_bg)
 end
 
 local function redraw(self)
     local old_bg = term.getBackgroundColor()
-    local bg     = colors.blue
-    local sbg    = colors.yellow
     term.clear()
     draw_menu(self)
-    term.setBackgroundColor(bg)
+    term.setBackgroundColor(self.bgcolor)
     local i = self.start
     local n = self.finish
     local lines = {}
@@ -29,10 +26,10 @@ local function redraw(self)
             chest = "[OUT] " .. chest
         end
         local text  = str.rpad(chest, ' ', self.width)
-        local color = bg
+        local color = self.bgcolor
 
         if i == self.cursor then
-            color = sbg
+            color = self.hlcolor
         end
         table.insert(lines, { text = text, color = color })
         i = i + 1
@@ -57,10 +54,14 @@ local function redraw(self)
     term.setBackgroundColor(old_bg)
 end
 
-function configure.run()
+function configure.run(filename)
     local pwd = shell.resolve(".")
-    --local inputs = cfg.read_seque(fs.combine(pwd, "inputs.txt"))
     local inputs = {}
+    if fs.exists(filename) then
+        if cfg.is_valid_seque_file(filename) then
+            inputs = cfg.read_seque(filename, "")
+        end
+    end
     local width, height = term.getSize()
     local self = {
         width = width,
@@ -69,7 +70,10 @@ function configure.run()
         inputs = inputs,
         start  = 1,
         finish = 1,
-        cursor = 1
+        cursor = 1,
+        menucolor = colors.brown,
+        bgcolor   = colors.gray,
+        hlcolor   = colors.red
     }
     self.finish = self.height - 3
     if self.finish > #self.chests then
@@ -80,11 +84,11 @@ function configure.run()
         local _, key = os.pullEvent("key")
         if key == keys.up then
             if self.cursor > 1 then
-                self.cursor = self.cursor - 1
                 if self.start > 1 and self.start == self.cursor then
                     self.start = self.start - 1
                     self.finish = self.finish - 1
                 end
+                self.cursor = self.cursor - 1
             end
         elseif key == keys.down then
             if self.cursor < #self.chests then
@@ -103,10 +107,11 @@ function configure.run()
             else
                 table.insert(self.inputs, chest)
             end
-        elseif key == 'q' then
+        elseif keys.getName(key) == 'q' then
             break
         end
     end
+    cfg.write_seque(inputs, filename)
 end
 
 return configure
