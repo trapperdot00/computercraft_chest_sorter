@@ -1,6 +1,0 @@
-{
-    "minecraft:chest_43",
-    "minecraft:chest_44",
-    "minecraft:chest_45",
-    "minecraft:chest_46"
-}

@@ -4,13 +4,11 @@ local work      = require("work_delegator")
 local Inventory = require("Inventory")
 
 local function main()
-    -- Update this to the current working directory:
-    -- local pwd        = "./"
-    local pwd        = "/chest/"
+    local pwd = shell.resolve(".")
 
     -- Files
-    local inventory_file = pwd .. "items.data"
-    local inputs_file    = pwd .. "inputs.txt"
+    local inventory_file = pwd .. "/items.data"
+    local inputs_file    = pwd .. "/inputs.txt"
 
     if not fs.exists(inputs_file) then
         print("Input-chest file '" .. inputs_file .. "' doesn't exist.")

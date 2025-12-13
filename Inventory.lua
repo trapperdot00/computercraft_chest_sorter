@@ -1,4 +1,4 @@
-local tbl          = require("table_utils")
+local tbl          = require("utils.table_utils")
 local chest_parser = require("chest_parser")
 
 local push      = require("cmds.push")

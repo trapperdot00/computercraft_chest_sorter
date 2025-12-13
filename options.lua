@@ -1,4 +1,4 @@
-local str     = require("string_utils")
+local str     = require("utils.string_utils")
 local options = {}
 
 function options.parse()
