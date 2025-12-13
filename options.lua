@@ -7,6 +7,7 @@ function options.parse()
         -- Exclusive arguments:
         push            = false,
         pull            = false,
+        conf            = false,
         get             = {},
         count           = {},
         -- Non-exclusive:
@@ -44,6 +45,7 @@ function options:valid()
     local excl_cnt = 0
     if self.push then excl_cnt = excl_cnt + 1 end
     if self.pull then excl_cnt = excl_cnt + 1 end
+    if self.conf then excl_cnt = excl_cnt + 1 end
     if #self.get   > 0 then excl_cnt = excl_cnt + 1 end
     if #self.count > 0 then excl_cnt = excl_cnt + 1 end
     return excl_cnt <= 1

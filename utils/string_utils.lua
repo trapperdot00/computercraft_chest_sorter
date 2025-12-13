@@ -46,4 +46,12 @@ function string_utils.pad(s, ch, width)
     return s
 end
 
+function string_utils.from_n_chars(n, ch)
+    local s = ch
+    for i = 1, n - 1 do
+        s = s .. ch
+    end
+    return s
+end
+
 return string_utils
