@@ -1,13 +1,6 @@
 local debugger			= require("debugger")
 local work_delegator	= {}
 
-local function count_items(inventory, sought_items)
-	for _, sought_item in pairs(sought_items) do
-		local count = inventory:count(sought_item)
-		print(sought_item, count)
-	end
-end
-
 local function print_inputs(inventory)
 	debugger.print_seque(inventory.inputs)
 end
