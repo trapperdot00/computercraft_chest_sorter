@@ -116,21 +116,16 @@ function config_reader.read_number(file)
     return tostring(s)
 end
 
--- Reads an associative configuration file,
--- returns an associative table from its contents:
--- Essentially a dictionary mapping a number to a
--- list of quoted strings
+---------- ASSOCIATIVE FILES: ----------
+
+-- Grammar:
+--     File         ::= SectionList
+--     SectionList  ::= Section | Section ',' SectionList
+--     Section      ::= <number> '{' ItemList '}'
+--     ItemList     ::= Item | Item ',' ItemList
+--     Item         ::= '"' <string> '"' | ""
 --
--- Keys must be integers
---
--- - File structure grammar: -
--- File         ::= SectionList
--- SectionList  ::= Section | Section ',' SectionList
--- Section      ::= <number> '{' ItemList '}'
--- ItemList     ::= Item | Item ',' ItemList
--- Item         ::= '"' <string> '"' | ""
---
--- - example file: -
+-- Example file:
 -- 1 {
 --     "minecraft:chest_1",
 --     "minecraft:chest_2"
@@ -138,6 +133,11 @@ end
 -- 2 {
 --     "minecraft:chest_3"
 -- }
+
+-- Reads an associative configuration file,
+-- returns an associative table from its contents.
+-- Essentially a dictionary mapping a number to a
+-- list of quoted strings
 function config_reader.read_assoc(filename, key_prefix)
     local conf = {}
     local file = io.open(filename)
@@ -160,15 +160,24 @@ function config_reader.read_assoc(filename, key_prefix)
     return conf
 end
 
--- Reads a sequential configuration file
--- returns a sequential table from its contents:
--- Essentially a list of the quoted strings
+---------- SEQUENTIAL FILES: ----------
+
+-- Grammar:
+--     File     ::= Section
+--     Section  ::= '{' ItemList '}'
+--     ItemList ::= Item | Item ',' ItemList
+--     Item     ::= '"' <string> '"' | ""
 --
--- - File structure grammar: -
--- File     ::= Section
--- Section  ::= '{' ItemList '}'
--- ItemList ::= Item | Item ',' ItemList
--- Item     ::= '"' <string> '"' | ""
+-- Example file:
+-- {
+--     "minecraft:chest_1",
+--     "minecraft:chest_3",
+--     "minecraft:chest_11"
+-- }
+
+-- Reads a sequential configuration file
+-- returns a sequential table from its contents.
+-- Essentially a list of the quoted strings
 function config_reader.read_seque(filename, key_prefix)
     local conf = {}
     local file = io.open(filename)
@@ -182,6 +191,34 @@ function config_reader.read_seque(filename, key_prefix)
         error("expected } to close sequential file \""..filename.."\" (got '"..ender.."')")
     end
     return conf
+end
+
+-- Check whether a given sequential file
+-- has a valid and parseable format
+function config_reader.is_valid_seque_file(filename)
+    local func   = function() config_reader.read_seque(filename) end
+    if pcall(func) then
+        return true
+    else
+        return false
+    end
+end
+
+-- Writes a sequential table into a given file
+function config_reader.write_seque(seque, filename)
+    local file = io.open(filename, 'w')
+    if not file then return end
+    file:write("{\n")
+    local first = true
+    for _, item in ipairs(seque) do
+        if first then
+            first = false
+        else
+            file:write(",\n")
+        end
+        file:write("\t\"" .. item .. '"')
+    end
+    file:write("\n}")
 end
 
 return config_reader
