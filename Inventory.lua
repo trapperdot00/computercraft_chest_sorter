@@ -4,6 +4,7 @@ local chest_parser = require("utils.chest_parser")
 local push      = require("cmd.push")
 local pull      = require("cmd.pull")
 local get       = require("cmd.get")
+local count     = require("cmd.count")
 
 local Inventory = {}
 Inventory.__index = Inventory
@@ -166,6 +167,13 @@ function Inventory:get(sought_items)
     self:carry_out(plans)
 end
 
+function Inventory:count(sought_items)
+    for _, item in ipairs(sought_items) do
+        local cnt = count.count(self, item)
+        print(item, cnt)
+    end
+end
+
 function Inventory:scan()
     self.contents = chest_parser.read_from_chests()
     self:save_contents()
@@ -194,29 +202,6 @@ end
 
 function Inventory:save_contents()
     chest_parser.write_to_file(self.contents, self.filename)
-end
-
-function Inventory:count(sought_items)
-    self:load(true)
-    
-    local counts = {}
-    for _, sought_item in ipairs(sought_items) do
-        for chest_name, contents in pairs(self.contents) do
-            for _, item in ipairs(contents.items) do
-                if item.name ~= sought_item then goto continue end
-                if sought_items[#counts] == sought_item then
-                    counts[#counts] = counts[#counts] + item.count
-                else
-                    table.insert(counts, item.count)
-                end
-                ::continue::
-            end
-        end
-    end
-
-    for i = 1, #counts do
-        print(sought_items[i], counts[i])
-    end
 end
 
 return Inventory
