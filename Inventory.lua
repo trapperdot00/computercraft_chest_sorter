@@ -5,6 +5,7 @@ local push      = require("cmd.push")
 local pull      = require("cmd.pull")
 local get       = require("cmd.get")
 local count     = require("cmd.count")
+local find      = require("cmd.find")
 
 local Inventory = {}
 Inventory.__index = Inventory
@@ -171,6 +172,15 @@ function Inventory:count(sought_items)
     for _, item in ipairs(sought_items) do
         local cnt = count.count(self, item)
         print(item, cnt)
+    end
+end
+
+function Inventory:find(sought_items)
+    for _, item in ipairs(sought_items) do
+        local chests = find.find(self, item)
+        for _, chest_id in ipairs(chests) do
+            print(item, "->", chest_id)
+        end
     end
 end
 

@@ -10,6 +10,7 @@ function options.parse()
         conf            = false,
         get             = {},
         count           = {},
+        find            = {},
         -- Non-exclusive:
         scan            = false
     }
@@ -36,6 +37,10 @@ function options.parse()
             local equal_pos = curr_arg:find('=', 1, true) + 1
             self.count = str.split(curr_arg:sub(equal_pos), ',')
         end
+        if curr_arg:find("--find", 1, true) then
+            local equal_pos = curr_arg:find('=', 1, true) + 1
+            self.find = str.split(curr_arg:sub(equal_pos), ',')
+        end
     end
     return self
 end
@@ -47,6 +52,7 @@ function options:count_exclusives()
     if self.conf then count = count + 1 end
     if #self.get   > 0 then count = count + 1 end
     if #self.count > 0 then count = count + 1 end
+    if #self.find > 0 then count = count + 1 end
     return count
 end
 

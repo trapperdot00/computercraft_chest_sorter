@@ -14,6 +14,7 @@ local function print_help()
     print("         --push --pull --scan")
     print("         --get=<item1>[,<itemN>]...")
     print("         --count=<item1>[,<itemN>]...")
+    print("         --find=<item1>[,<itemN>]...")
 end
 
 local function load_inputs(inputs_file)
@@ -52,6 +53,8 @@ function work_delegator.delegate(options, inputs_file, inventory_file)
         inventory:get(options.get)
     elseif #options.count > 0 then
         inventory:count(options.count)
+    elseif #options.find > 0 then
+        inventory:find(options.find)
     end
 end
 
