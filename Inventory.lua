@@ -153,9 +153,34 @@ function Inventory:carry_out(plans)
     end
 end
 
+-- TODO: clean up this
+function Inventory:update_stacksize(plans)
+    local filename = "/chest/stack.data"
+    local file = io.open(filename, 'w')
+    if not file then return end
+    local entries = {}
+    for _, plan in ipairs(plans) do
+        local src      = plan.src
+        local src_slot = plan.src_slot
+
+        local chest = peripheral.wrap(src)
+        local item  = chest.getItemDetail(src_slot)
+        local entry = {
+            name = item.name,
+            stacksize = item.maxCount
+        }
+        table.insert(entries, entry)
+    end
+    for _, entry in ipairs(entries) do
+        local line = entry.name .. ' = ' .. entry.stacksize .. '\n'
+        file:write(line)
+    end
+end
+
 -- Push items from the input chests into the output chests.
 function Inventory:push()
     local plans = push.get_push_plans(self)
+    self:update_stacksize(plans)
     self:carry_out(plans)
 end
 
