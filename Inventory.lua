@@ -1,6 +1,5 @@
 local tbl          = require("utils.table_utils")
 local chest_parser = require("utils.chest_parser")
-local cfg          = require("utils.config_reader")
 
 local push      = require("cmd.push")
 local pull      = require("cmd.pull")
