@@ -23,7 +23,17 @@ function Inventory.new(inputs, filename, stack_filename)
     return self
 end
 
+-- TODO: clean up this
+function Inventory:load_stack()
+    if self.stack then return end
+    local file = io.open(self.stack_filename)
+    if not file then self.stack = {} return end
+    local text = file:read('a')
+    self.stack = textutils.unserialize(text) or {}
+end
+
 function Inventory:load(noscan)
+    self:load_stack()
     if self.contents then return end
     local file = io.open(self.filename)
     if file then
@@ -157,46 +167,37 @@ function Inventory:carry_out(plans)
 end
 
 -- TODO: clean up this
-function Inventory:load_stack()
-    if self.stack then return end
-    local file = io.open(self.stack_filename)
-    if not file then self.stack = {} return end
-    local text = file:read('a')
-    self.stack = textutils.unserialize(text) or {}
-    for _, item in ipairs(self.stack) do
-        print(item.name, item.stacksize)
-    end
-end
-
--- TODO: clean up this
-function Inventory:update_stacksize(plans)
-    self:load_stack()
+function Inventory:update_stacksize()
+    self:load()
     local file = io.open(self.stack_filename, 'w')
     if not file then return end
-    for _, plan in ipairs(plans) do
-        local src      = plan.src
-        local src_slot = plan.src_slot
-
-        local chest = peripheral.wrap(src)
-        local item  = chest.getItemDetail(src_slot)
-        local entry = {
-            name = item.name,
-            stacksize = item.maxCount
-        }
-        local eq = function(a, b)
-            return a.name == b.name
+    for chest_id, contents in pairs(self.contents) do
+        if not self:is_input_chest(chest_id) then
+            goto next_chest
         end
-        if not tbl.contains(self.stack, entry, eq) then
-            table.insert(self.stack, entry)
+        for slot, item in pairs(contents.items) do
+            local chest = peripheral.wrap(chest_id)
+            local item  = chest.getItemDetail(slot)
+            local entry = {
+                name = item.name,
+                stacksize = item.maxCount
+            }
+            local eq = function(a, b)
+                return a.name == b.name
+            end
+            if not tbl.contains(self.stack, entry, eq) then
+                table.insert(self.stack, entry)
+            end
         end
+        ::next_chest::
     end
     file:write(textutils.serialize(self.stack))
 end
 
 -- Push items from the input chests into the output chests.
 function Inventory:push()
+    self:update_stacksize()
     local plans = push.get_push_plans(self)
-    self:update_stacksize(plans)
     self:carry_out(plans)
 end
 
