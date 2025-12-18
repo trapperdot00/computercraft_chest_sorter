@@ -166,31 +166,66 @@ function Inventory:carry_out(plans)
     end
 end
 
+function Inventory:for_each_chest(func)
+    local tasks = {}
+    for chest_id, contents in pairs(self.contents) do
+        table.insert(tasks,
+            function()
+                func(chest_id, contents)
+            end
+        )
+    end
+    parallel.waitForAll(table.unpack(tasks))
+end
+
+function Inventory:for_each_input_chest(func)
+    local f = function(chest_id, contents)
+        if self:is_input_chest(chest_id) then
+            func(chest_id, contents)
+        end
+    end
+    self:for_each_chest(f)
+end
+
+function Inventory:for_each_slot(chest_id, contents, func)
+    local tasks = {}
+    for slot, item in pairs(contents.items) do
+        table.insert(tasks,
+            function()
+                func(chest_id, slot, item)
+            end
+        )
+    end
+    parallel.waitForAll(table.unpack(tasks))
+end
+
+function Inventory:for_each_input_slot(func)
+    local f = function(chest_id, contents)
+        self:for_each_slot(chest_id, contents, func)
+    end
+    self:for_each_input_chest(f)
+end
+
 -- TODO: clean up this
 function Inventory:update_stacksize()
     self:load()
     local file = io.open(self.stack_filename, 'w')
     if not file then return end
-    for chest_id, contents in pairs(self.contents) do
-        if not self:is_input_chest(chest_id) then
-            goto next_chest
-        end
-        for slot, item in pairs(contents.items) do
-            local chest = peripheral.wrap(chest_id)
-            local item  = chest.getItemDetail(slot)
-            local entry = {
-                name = item.name,
-                stacksize = item.maxCount
-            }
-            local eq = function(a, b)
-                return a.name == b.name
-            end
-            if not tbl.contains(self.stack, entry, eq) then
-                table.insert(self.stack, entry)
-            end
-        end
-        ::next_chest::
+    local item_equality = function(a, b)
+        return a.name == b.name
     end
+    local func = function(chest_id, slot, item)
+        local chest = peripheral.wrap(chest_id)
+        local item  = chest.getItemDetail(slot)
+        local entry = {
+            name     = item.name,
+            maxCount = item.maxCount
+        }
+        if not tbl.contains(self.stack, entry, item_equality) then
+            table.insert(self.stack, entry)
+        end
+    end
+    self:for_each_input_slot(func)
     file:write(textutils.serialize(self.stack))
 end
 
