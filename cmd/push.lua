@@ -145,16 +145,19 @@ function push.get_existing_slot_filling_plans(self, contents)
         for input_id, input_slots in pairs(inputs) do
             local input_contents = contents[input_id]
             for _, input_slot in ipairs(input_slots) do
+                print(input_slot, item_name)
                 local item      = input_contents.items[input_slot]
                 local src_count = item.count
-                local vdsts     = item_dsts[item_name]
-                for dst_id, dst_slots in pairs(vdsts) do
+                local dsts     = item_dsts[item_name]
+                for dst_id, dst_slots in pairs(dsts) do
                     for _, dst_slot in ipairs(dst_slots) do
                         local dst_contents = contents[dst_id]
                         local dst_item     = dst_contents.items[dst_slot]
                         local dst_count    = dst_item.count
+                        print(dst_id, dst_slot, dst_count)
                         local available    = stack_size - dst_count
                         local pushable     = math.min(src_count, available)
+                        print(available, pushable)
                         if pushable == 0 then goto next_output_slot end
                         src_count = src_count - pushable
                         local plan = {
@@ -214,7 +217,7 @@ function push.get_push_plans(self)
     local contents = deepcopy(self.contents)
     local plans     = push.get_existing_slot_filling_plans(self, contents)
     local tmp_plans = push.get_empty_slot_filling_plans(self, contents)
-    table.move(tmp_plans, 1, #tmp_plans, #plans, plans)
+    table.move(tmp_plans, 1, #tmp_plans, #plans + 1, plans)
     print_plans(plans)
     return plans
 end
