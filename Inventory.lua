@@ -187,7 +187,16 @@ function Inventory:for_each_input_chest(func)
     self:for_each_chest(f)
 end
 
-function Inventory:for_each_slot(chest_id, contents, func)
+function Inventory:for_each_output_chest(func)
+    local f = function(chest_id, contents)
+        if not self:is_input_chest(chest_id) then
+            func(chest_id, contents)
+        end
+    end
+    self:for_each_chest(f)
+end
+
+function Inventory:for_each_slot_in(chest_id, contents, func)
     local tasks = {}
     for slot, item in pairs(contents.items) do
         table.insert(tasks,
@@ -201,9 +210,16 @@ end
 
 function Inventory:for_each_input_slot(func)
     local f = function(chest_id, contents)
-        self:for_each_slot(chest_id, contents, func)
+        self:for_each_slot_in(chest_id, contents, func)
     end
     self:for_each_input_chest(f)
+end
+
+function Inventory:for_each_output_slot(func)
+    local f = function(chest_id, contents)
+        self:for_each_slot_in(chest_id, contents, func)
+    end
+    self:for_each_output_chest(f)
 end
 
 -- TODO: clean up this
@@ -217,13 +233,7 @@ function Inventory:update_stacksize()
     local func = function(chest_id, slot, item)
         local chest = peripheral.wrap(chest_id)
         local item  = chest.getItemDetail(slot)
-        local entry = {
-            name     = item.name,
-            maxCount = item.maxCount
-        }
-        if not tbl.contains(self.stack, entry, item_equality) then
-            table.insert(self.stack, entry)
-        end
+        self.stack[item.name] = item.maxCount
     end
     self:for_each_input_slot(func)
     file:write(textutils.serialize(self.stack))
@@ -233,7 +243,7 @@ end
 function Inventory:push()
     self:update_stacksize()
     local plans = push.get_push_plans(self)
-    self:carry_out(plans)
+    --self:carry_out(plans)
 end
 
 -- Pull items from the output chests into the input chests.
