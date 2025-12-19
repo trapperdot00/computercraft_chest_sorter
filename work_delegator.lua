@@ -2,6 +2,7 @@ local debugger          = require("utils.debugger")
 local configure         = require("configure")
 local cfg               = require("utils.config_reader")
 local Inventory         = require("Inventory")
+
 local work_delegator    = {}
 
 local function print_inputs(inventory)
@@ -19,7 +20,7 @@ local function print_help()
 end
 
 function work_delegator.delegate
-(options, inputs_path, contents_path, stack_path)
+(options, contents_path, inputs_path, stacks_path)
     if not options:valid() then
         print_help()
         return
@@ -30,14 +31,16 @@ function work_delegator.delegate
         return
     end
 
-    local inventory = Inventory.new(inputs_path, contents_path, stack_path)
+    local inventory = Inventory.new(
+        contents_path, inputs_path, stacks_path
+    )
 
-    -- Non-exclusive flags
+    -- Handle non-exclusive flags
     if options.scan then
         inventory:scan()
     end
 
-    -- Exclusive flags
+    -- Handle exclusive flags
     if options.push then
         inventory:push()
     elseif options.pull then

@@ -24,7 +24,7 @@ function push.get_nonfull_viable_output_slots(self)
             goto next_chest
         end
         for slot, item in pairs(contents.items) do
-            local maxCount = self.stack[item.name]
+            local maxCount = self.stacks[item.name]
             local dsts = {}
             for dst_id, dst_contents in pairs(self.contents) do
                 if self:is_input_chest(dst_id) then

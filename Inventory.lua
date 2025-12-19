@@ -16,28 +16,28 @@ Inventory.__index = Inventory
 
 -- Constructs and returns a new instance of Inventory
 -- Named fields:
---     `inputs_path`   : Filename of the document that
---                       lists the chest IDs of input chests.
---     `inputs`        : Array of input chest IDs.
---     `contents_path` : Filename of the document that
---                       lists the current state of the
---                       managed chest-system.
---     `contents`      : Table that keeps track of the current
---                       state of the managed chest-system.
---     `stack_path`    : Filename of the document that
---                       describes the currently known items'
---                       stack sizes.
---     `stack`         : Associative table that associates
---                       an item name with a stack size.
---                       (key: item name; value: stack size)
-function Inventory.new(inputs_path, contents_path, stack_path)
+--     `contents_path`: Filename of the document that
+--                      lists the current state of the
+--                      managed chest-system.
+--     `contents`     : Table that keeps track of the current
+--                      state of the managed chest-system.
+--     `inputs_path`  : Filename of the document that
+--                      lists the chest IDs of input chests.
+--     `inputs`       : Array of input chest IDs.
+--     `stacks_path`  : Filename of the document that
+--                      describes the currently known items'
+--                      stack sizes.
+--     `stacks`       : Associative table that associates
+--                      an item name with a stack size.
+--                      (key: item name; value: stack size)
+function Inventory.new(contents_path, inputs_path, stacks_path)
     local self = setmetatable({
-        inputs_path    = inputs_path,
-        inputs         = nil,
-        contents_path  = contents_path,
-        contents       = nil,
-        stack_path     = stack_path,
-        stack          = nil
+        contents_path = contents_path,
+        contents      = nil,
+        inputs_path   = inputs_path,
+        inputs        = nil,
+        stacks_path   = stacks_path,
+        stacks        = nil
     }, Inventory)
     self:load_inputs()
     return self
@@ -56,11 +56,11 @@ end
 
 -- TODO: clean up this
 function Inventory:load_stack()
-    if self.stack then return end
-    local file = io.open(self.stack_path)
-    if not file then self.stack = {} return end
+    if self.stacks then return end
+    local file = io.open(self.stacks_path)
+    if not file then self.stacks = {} return end
     local text = file:read('a')
-    self.stack = textutils.unserialize(text) or {}
+    self.stacks = textutils.unserialize(text) or {}
 end
 
 function Inventory:load(noscan)
@@ -278,7 +278,7 @@ end
 -- TODO: clean up this
 function Inventory:update_stacksize()
     self:load()
-    local file = io.open(self.stack_path, 'w')
+    local file = io.open(self.stacks_path, 'w')
     if not file then return end
     local item_equality = function(a, b)
         return a.name == b.name
@@ -286,10 +286,10 @@ function Inventory:update_stacksize()
     local func = function(chest_id, slot, item)
         local chest = peripheral.wrap(chest_id)
         local item  = chest.getItemDetail(slot)
-        self.stack[item.name] = item.maxCount
+        self.stacks[item.name] = item.maxCount
     end
     self:for_each_input_slot(func)
-    file:write(textutils.serialize(self.stack))
+    file:write(textutils.serialize(self.stacks))
 end
 
 -- Push items from the input chests into the output chests.
