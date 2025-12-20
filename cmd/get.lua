@@ -63,6 +63,7 @@ function get.get_get_plans(self, sought_items)
             if dsts.slots[dst_i] <= 0 then
                 dst_i = dst_i + 1
             end
+            if dst_i > #dsts.slots then break end
             src_slot_i = src_slot_i + 1
         end
         src_i = src_i + 1
