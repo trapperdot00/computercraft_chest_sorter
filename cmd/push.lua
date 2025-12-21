@@ -1,3 +1,5 @@
+local tbl = require("utils.table_utils")
+
 local push = {}
 
 -- Get a list of output IDs and a list of free slots.
@@ -25,7 +27,7 @@ end
 -- to an associative table that maps output chest IDs
 -- to slot indices that denote slots in output chests
 -- that are not empty, nor full.
--- (as in item's count is less than its stack size)
+-- (as in item's count not zero and is less than its stack size)
 function push.get_nonfull_viable_output_slots(self)
     local item_dst = {}
     for chest_id, contents in pairs(self.contents) do
@@ -81,69 +83,88 @@ function push.get_input_item_slots(self)
     return input_item_slots
 end
 
-function deepcopy(orig, copies)
-    copies = copies or {}
-    local orig_type = type(orig)
-    local copy
-    if orig_type == 'table' then
-        if copies[orig] then
-            copy = copies[orig]
-        else
-            copy = {}
-            copies[orig] = copy
-            for orig_key, orig_value in next, orig, nil do
-                copy[deepcopy(orig_key, copies)] = deepcopy(orig_value, copies)
-            end
-            setmetatable(copy, deepcopy(getmetatable(orig), copies))
-        end
-    else -- number, string, boolean, etc
-        copy = orig
-    end
-    return copy
-end
-
 function push.get_existing_slot_filling_plans(self, contents)
     local plans = {}
-    local input_item_slots = push.get_input_item_slots(self)
-    local item_dsts        = push.get_nonfull_viable_output_slots(self)
-    for item_name, inputs in pairs(input_item_slots) do
+    
+    ------------- FORMERLY input_item_slots
+    local srcs         = push.get_input_item_slots(self)            -- { item = { src_ids  = { slot1, ... slotN } } }
+
+    ------------- FORMERLY item_dsts
+    local dsts         = push.get_nonfull_viable_output_slots(self) -- { item = { dst_ids = { slot1, ... slotN } } }
+
+    local srcs_items   = tbl.get_keys(srcs)
+    local dsts_items   = tbl.get_keys(dsts)
+    local items = tbl.get_common_values(srcs_items, dsts_items)
+    local items_i = 1
+
+    while items_i <= #srcs_items do
+        local item_name = srcs_items[items_i]
         local stack_size = self.stacks[item_name]
-        for input_id, input_slots in pairs(inputs) do
-            local input_contents = contents[input_id]
-            for _, input_slot in ipairs(input_slots) do
-                local item      = input_contents.items[input_slot]
-                local src_count = item.count
-                local dsts     = item_dsts[item_name]
-                for dst_id, dst_slots in pairs(dsts) do
-                    for _, dst_slot in ipairs(dst_slots) do
-                        local dst_contents = contents[dst_id]
-                        local dst_item     = dst_contents.items[dst_slot]
-                        local dst_count    = dst_item.count
-                        local available    = stack_size - dst_count
-                        local pushable     = math.min(src_count, available)
-                        if pushable == 0 then goto next_output_slot end
-                        src_count = src_count - pushable
-                        local plan = {
-                            src      = input_id,
-                            dst      = dst_id,
-                            src_slot = input_slot,
-                            dst_slot = dst_slot,
-                            count    = pushable
-                        }
-                        table.insert(plans, plan)
-                        dst_item.count = dst_item.count + pushable
-                        if src_count == 0 then
-                            goto next_input_slot
-                        end
-                        ::next_output_slot::
+        
+        -- { ID = { slot1, slot2, ..., slotN } }
+        local src_chests = srcs[item_name]
+        local dst_chests = dsts[item_name]
+
+        -- { ID1, ID2, ..., ID_N }
+        local src_ids = tbl.get_keys(src_chests)
+        local dst_ids = tbl.get_keys(dst_chests)
+
+        local src_id_i = 1
+        local dst_id_i = 1
+
+        local src_slot_i = 1
+        local dst_slot_i = 1
+
+        while src_id_i <= #src_ids and
+              dst_id_i <= #dst_ids do
+            local src_id = src_ids[src_id_i]
+            local dst_id = dst_ids[dst_id_i]
+
+            local src_data = contents[src_id]
+            local dst_data = contents[dst_id]
+
+            local src_slots = src_chests[src_id]
+            local dst_slots = dst_chests[dst_id]
+            
+            local src_slot = src_slots[src_slot_i]
+            local dst_slot = dst_slots[dst_slot_i]
+
+            local src_item = src_data.items[src_slot]
+            local dst_item = dst_data.items[dst_slot]
+
+            local dst_cap = stack_size - dst_item.count
+            local cnt = math.min(src_item.count, dst_cap)
+
+            if cnt ~= 0 then
+                local plan = {
+                    src      = src_id,
+                    dst      = dst_id,
+                    src_slot = src_slot,
+                    dst_slot = dst_slot,
+                    count    = cnt
+                }
+                table.insert(plans, plan)
+                src_item.count = src_item.count - cnt
+                dst_item.count = dst_item.count + cnt
+                if src_item.count == 0 then
+                    -- Go to next input slot
+                    src_slot_i = src_slot_i + 1
+                    -- Go to next input chest
+                    if src_slot_i > #src_slots then
+                        src_id_i   = src_id_i + 1
+                        src_slot_i = 1
                     end
-                    ::next_output::
                 end
-                ::next_input_slot::
+            else
+                dst_slot_i = dst_slot_i + 1
+                if dst_slot_i > #dst_slots then
+                    -- Go to next output chest
+                    dst_id_i   = dst_id_i + 1
+                    dst_slot_i = 1
+                end
             end
-            ::next_input::
         end
-        ::next_item::
+        items_i = items_i + 1
     end
     return plans
 end
@@ -177,10 +198,10 @@ end
 
 function push.get_push_plans(self)
     self:load()
-    local contents = deepcopy(self.contents)
+    local contents = tbl.deepcopy(self.contents)
     local plans     = push.get_existing_slot_filling_plans(self, contents)
-    local tmp_plans = push.get_empty_slot_filling_plans(self, contents)
-    table.move(tmp_plans, 1, #tmp_plans, #plans + 1, plans)
+    --local tmp_plans = push.get_empty_slot_filling_plans(self, contents)
+    --table.move(tmp_plans, 1, #tmp_plans, #plans + 1, plans)
     return plans
 end
 
