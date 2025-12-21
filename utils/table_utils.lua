@@ -47,4 +47,52 @@ function table_utils.contains(tbl, value, eq)
     return i <= #tbl
 end
 
+-- Returns the keys of an associative table
+-- as an array
+function table_utils.get_keys(tbl)
+    local keys = {}
+    for key, _ in pairs(tbl) do
+        table.insert(keys, key)
+    end
+    return keys
+end
+
+-- { 1 2 2 3 6 8 }
+-- { 2 4 6 6 7 8 }
+function table_utils.get_common_values(t1, t2)
+    local res = {}
+    for i = 1, #t1 do
+        for j = 1, #t2 do
+            if t1[i] == t2[j] and
+            not table_utils.contains(res, t1[i])
+            then
+                table.insert(res, t1[i])
+            end
+        end
+    end
+    return res
+end
+
+function table_utils.deepcopy(orig, copies)
+    copies = copies or {}
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        if copies[orig] then
+            copy = copies[orig]
+        else
+            copy = {}
+            copies[orig] = copy
+            for orig_key, orig_value in next, orig, nil do
+                copy[deepcopy(orig_key, copies)] = deepcopy(orig_value, copies)
+            end
+            setmetatable(copy, deepcopy(getmetatable(orig), copies))
+        end
+    else
+        copy = orig
+    end
+    return copy
+end
+
+
 return table_utils
