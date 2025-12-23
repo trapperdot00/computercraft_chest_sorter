@@ -1,5 +1,5 @@
-local cliargs   = require("options")
-local work      = require("work_delegator")
+local cliargs   = require("src.options")
+local work      = require("src.work_delegator")
 
 local function create_directory(dir)
     if not fs.exists(dir) then

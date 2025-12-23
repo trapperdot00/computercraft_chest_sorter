@@ -215,8 +215,8 @@ function push.get_push_plans(self)
     self:load()
     local contents = tbl.deepcopy(self.contents)
     local plans     = push.get_existing_slot_filling_plans(self, contents)
-    --local tmp_plans = push.get_empty_slot_filling_plans(self, contents)
-    --table.move(tmp_plans, 1, #tmp_plans, #plans + 1, plans)
+    local tmp_plans = push.get_empty_slot_filling_plans(self, contents)
+    table.move(tmp_plans, 1, #tmp_plans, #plans + 1, plans)
     return plans
 end
 

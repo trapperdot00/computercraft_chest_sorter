@@ -1,15 +1,15 @@
 local tbl          = require("utils.table_utils")
 local chest_parser = require("utils.chest_parser")
 local cfg          = require("utils.config_reader")
-local configure    = require("configure")
+local configure    = require("src.configure")
 
-local push      = require("cmd.push")
-local pull      = require("cmd.pull")
-local size      = require("cmd.size")
-local usage     = require("cmd.usage")
-local get       = require("cmd.get")
-local count     = require("cmd.count")
-local find      = require("cmd.find")
+local push      = require("src.cmd.push")
+local pull      = require("src.cmd.pull")
+local size      = require("src.cmd.size")
+local usage     = require("src.cmd.usage")
+local get       = require("src.cmd.get")
+local count     = require("src.cmd.count")
+local find      = require("src.cmd.find")
 
 local Inventory = {}
 Inventory.__index = Inventory

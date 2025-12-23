@@ -1,7 +1,7 @@
 local debugger          = require("utils.debugger")
-local configure         = require("configure")
+local configure         = require("src.configure")
 local cfg               = require("utils.config_reader")
-local Inventory         = require("Inventory")
+local Inventory         = require("src.Inventory")
 
 local work_delegator    = {}
 
