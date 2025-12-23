@@ -21,10 +21,9 @@ inventory.__index = inventory
 --   `contents`   : An instance of contents
 --                  that keeps track of the
 --                  inventory contents.
---   `inputs_path`: Filename of the document
---                  that lists the IDs of 
---                  the input peripherals.
---   `inputs`     : Array of input peripheral IDs.
+--   `inputs`     : An instance of inputs
+--                  that keeps track of the IDs
+--                  of input peripherals.
 --   `stacks_path`: Filename of the document that
 --                  describes the known items'
 --                  stack sizes.
