@@ -85,57 +85,68 @@ end
 
 function push.get_existing_slot_filling_plans(self, contents)
     local plans = {}
-    
-    ------------- FORMERLY input_item_slots
-    local srcs         = push.get_input_item_slots(self)            -- { item = { src_ids  = { slot1, ... slotN } } }
 
-    ------------- FORMERLY item_dsts
-    local dsts         = push.get_nonfull_viable_output_slots(self) -- { item = { dst_ids = { slot1, ... slotN } } }
+    -- Viable chest data
+    -- { item = { ids = { slot1, ... slotN } } }
+    local srcs = push.get_input_item_slots(self)
+    local dsts = push.get_nonfull_viable_output_slots(self)
 
-    local srcs_items   = tbl.get_keys(srcs)
-    local dsts_items   = tbl.get_keys(dsts)
-    local items = tbl.get_common_values(srcs_items, dsts_items)
-    local items_i = 1
+    -- All items in chests
+    local srcs_items = tbl.get_keys(srcs)
+    local dsts_items = tbl.get_keys(dsts)
+    -- Common items in chests
+    local items      = tbl.get_common_values(
+        srcs_items, dsts_items
+    )
+    local items_i    = 1
 
     while items_i <= #srcs_items do
-        local item_name = srcs_items[items_i]
+        -- Get info for current item
+        local item_name  = srcs_items[items_i]
         local stack_size = self.stacks[item_name]
-        
+        -- Chests and slots that contain this item
         -- { ID = { slot1, slot2, ..., slotN } }
         local src_chests = srcs[item_name]
         local dst_chests = dsts[item_name]
-
+        -- Chest IDs
         -- { ID1, ID2, ..., ID_N }
         local src_ids = tbl.get_keys(src_chests)
         local dst_ids = tbl.get_keys(dst_chests)
-
+        -- Chest ID indices
         local src_id_i = 1
         local dst_id_i = 1
-
+        -- Chest slot indices
         local src_slot_i = 1
         local dst_slot_i = 1
 
         while src_id_i <= #src_ids and
               dst_id_i <= #dst_ids do
+            -- Current chest ID
             local src_id = src_ids[src_id_i]
             local dst_id = dst_ids[dst_id_i]
-
+            -- Current chest contents
             local src_data = contents[src_id]
             local dst_data = contents[dst_id]
-
+            -- Slots that contain the current item
+            -- inside the current chest
             local src_slots = src_chests[src_id]
             local dst_slots = dst_chests[dst_id]
-            
+            -- Current slot
             local src_slot = src_slots[src_slot_i]
             local dst_slot = dst_slots[dst_slot_i]
-
+            -- Current item table
             local src_item = src_data.items[src_slot]
             local dst_item = dst_data.items[dst_slot]
 
+            -- Slot item capacity to full
             local dst_cap = stack_size - dst_item.count
+            -- Pushable item count 
+            -- from input slot to output slot
             local cnt = math.min(src_item.count, dst_cap)
 
-            if cnt ~= 0 then
+            -- Can we push into this output slot?
+            if 0 < cnt then
+                -- Can push: we have a plan
                 local plan = {
                     src      = src_id,
                     dst      = dst_id,
@@ -144,6 +155,9 @@ function push.get_existing_slot_filling_plans(self, contents)
                     count    = cnt
                 }
                 table.insert(plans, plan)
+                -- Update chest contents in memory
+                -- as if the plan had been
+                -- carried out
                 src_item.count = src_item.count - cnt
                 dst_item.count = dst_item.count + cnt
                 if src_item.count == 0 then
@@ -155,7 +169,8 @@ function push.get_existing_slot_filling_plans(self, contents)
                         src_slot_i = 1
                     end
                 end
-            else
+            else -- Can't push: output must be full
+                -- Go to next output slot
                 dst_slot_i = dst_slot_i + 1
                 if dst_slot_i > #dst_slots then
                     -- Go to next output chest
