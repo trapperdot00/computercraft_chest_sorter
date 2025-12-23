@@ -54,6 +54,16 @@ local function redraw(self)
     term.setBackgroundColor(old_bg)
 end
 
+local function get_inventory_names()
+    local invs = { peripheral.find("inventory") }
+    local inv_names = {}
+    for i = 1, #invs do
+        local inv_name = peripheral.getName(invs[i])
+        table.insert(inv_names, inv_name)
+    end
+    return inv_names
+end
+
 function configure.run(filename)
     local pwd = shell.resolve(".")
     local inputs = {}
@@ -66,7 +76,7 @@ function configure.run(filename)
     local self = {
         width = width,
         height = height,
-        chests = peripheral.getNames(),
+        chests = get_inventory_names(),
         inputs = inputs,
         start  = 1,
         finish = 1,
