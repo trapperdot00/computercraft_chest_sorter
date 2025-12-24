@@ -24,16 +24,24 @@ end
 -- prompts the user to configure bindings.
 -- Does nothing if already loaded.
 function inputs:load()
-    if self.data ~= nil then return end
-    if not fs.exists(self.filename) or not
+    if self:is_loaded() then return end
+    if fs.exists(self.filename) and
     cfg.is_valid_seque_file(self.filename) then
-        -- TODO: This should really return
-        -- the user-inputted array of selected
-        -- inputs and the re-reading of the
-        -- input-file could be avoided!
-        configure.run(self.filename)
+        self.data = cfg.read_seque(
+            self.filename, ""
+        )
+    else
+        self:configure()
     end
-    self.data = cfg.read_seque(self.filename, "")
+end
+
+function inputs:configure()
+    self.data = configure.run(self.filename)
+    self:save_to_file()
+end
+
+function inputs:save_to_file()
+    cfg.write_seque(self.data, self.filename)
 end
 
 -- Checks whether the given peripheral

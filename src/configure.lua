@@ -1,6 +1,7 @@
-local str       = require("utils.string_utils")
-local tbl       = require("utils.table_utils")
-local cfg       = require("utils.config_reader")
+local str = require("utils.string_utils")
+local tbl = require("utils.table_utils")
+local cfg = require("utils.config_reader")
+
 local configure = {}
 
 local function draw_menu(self)
@@ -122,7 +123,7 @@ function configure.run(filename)
             break
         end
     end
-    cfg.write_seque(inputs, filename)
+    return inputs
 end
 
 return configure
