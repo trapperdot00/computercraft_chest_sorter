@@ -37,7 +37,7 @@ function get.get_nonfull_input_chests(self)
     return { names = input_names, slots = input_slots }
 end
 
-function get.get_get_plans(self, sought_items)
+function get.get_plans(self, sought_items)
     self:load()
     local plans = {}
 

@@ -44,7 +44,10 @@ end
 function inventory:load_stack()
     if self.stacks then return end
     local file = io.open(self.stacks_path)
-    if not file then self.stacks = {} return end
+    if not file
+        then self.stacks = {}
+        return
+    end
     local text = file:read('a')
     file:close()
     self.stacks = textutils.unserialize(text) or {}
@@ -90,8 +93,9 @@ function inventory:for_each_input_chest(func)
     self.contents:for_each_chest(f)
 end
 
--- Wrapper for `for_each_chest` that only calls
--- `func` for a given chest if it is an output chest.
+-- Wrapper for `for_each_chest` that
+-- only calls `func` for a given chest
+-- if it is an output chest.
 function inventory:for_each_output_chest(func)
     local f = function(chest_id, contents)
         if not self.inputs:is_input_chest(chest_id) then
@@ -145,14 +149,14 @@ end
 -- into the output peripherals.
 function inventory:push()
     self:update_stacksize()
-    local plans = push.get_push_plans(self)
+    local plans = push.get_plans(self)
     self:carry_out(plans)
 end
 
 -- Push items from the output peripherals
 -- into the input peripherals.
 function inventory:pull()
-    local plans = pull.get_pull_plans(self)
+    local plans = pull.get_plans(self)
     self:carry_out(plans)
 end
 
@@ -173,7 +177,7 @@ function inventory:usage()
 end
 
 function inventory:get(sought_items)
-    local plans = get.get_get_plans(self, sought_items)
+    local plans = get.get_plans(self, sought_items)
     self:carry_out(plans)
 end
 

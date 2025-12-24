@@ -211,7 +211,7 @@ function push.get_empty_slot_filling_plans(self, contents)
     return plans
 end
 
-function push.get_push_plans(self)
+function push.get_plans(self)
     self:load()
     local contents  = tbl.deepcopy(self.contents.data)
     local plans     = push.get_existing_slot_filling_plans(self, contents)

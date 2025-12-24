@@ -34,7 +34,7 @@ function pull.get_viable_pull_chests(self)
     return { input, output }
 end
 
-function pull.get_pull_plans(self)
+function pull.get_plans(self)
     self:load()
     local plans = {}
 

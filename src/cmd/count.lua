@@ -3,14 +3,14 @@ local count = {}
 function count.count(self, sought_item)
     self:load(true)
     local cnt = 0
-    for chest_name, contents in pairs(self.contents.data) do
-        if self.inputs:is_input_chest(chest_name) then goto continue1 end
-        for _, item in pairs(contents.items) do
-            if item.name ~= sought_item then goto continue2 end
-            cnt = cnt + item.count
-            ::continue2::
+    for id, data in pairs(self.contents.data) do
+        if not self.inputs:is_input_chest(id) then
+            for _, item in pairs(data.items) do
+                if item.name == sought_item then
+                    cnt = cnt + item.count
+                end
+            end
         end
-        ::continue1::
     end
     return cnt
 end
