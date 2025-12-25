@@ -39,6 +39,7 @@ function inputs:configure()
     if #config == 0 then
         error("Invalid config: no inputs!", 0)
     end
+    self.data = config
     self:save_to_file()
 end
 
