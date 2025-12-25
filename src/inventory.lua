@@ -5,6 +5,7 @@ local sta = require("src.stacks")
 
 -- Utilities
 local cfg  = require("utils.config_reader")
+local tbl  = require("utils.table_utils")
 local plan = require("src.plan")
 
 -- Commands
@@ -50,6 +51,20 @@ function inventory.new
 end
 
 function inventory:load(noscan)
+    local eq = function(p, id)
+        return peripheral.getName(p) == id
+    end
+    for _, input in ipairs(self.inputs.data) do
+        if not tbl.contains(
+            self.connected, input, eq
+        ) then
+            error(
+                "Input '" .. input ..
+                "' not connected!",
+                0
+            )
+        end
+    end
     self.stacks:load()
     self.contents:load() 
     if not noscan then

@@ -56,12 +56,18 @@ local function redraw(self)
     term.setBackgroundColor(old_bg)
 end
 
-local function get_inventory_names()
+local function get_inventory_names(extras)
     local invs = { peripheral.find("inventory") }
     local inv_names = {}
     for i = 1, #invs do
         local inv_name = peripheral.getName(invs[i])
         table.insert(inv_names, inv_name)
+    end
+    for _, inv_name in ipairs(extras) do
+        if not tbl.contains(inv_names, inv_name)
+        then
+            table.insert(inv_names, inv_name)
+        end
     end
     return inv_names
 end
@@ -79,7 +85,7 @@ function configure.run(filename)
         width     = width,
         height    = height,
         -- Chest data
-        chests    = get_inventory_names(),
+        chests    = get_inventory_names(inputs),
         inputs    = inputs,
         -- Visible elements
         start     = 1,
