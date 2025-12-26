@@ -6,6 +6,7 @@ local sta = require("src.stacks")
 -- Utilities
 local cfg  = require("utils.config_reader")
 local tbl  = require("utils.table_utils")
+local tskp = require("utils.task_pool")
 local plan = require("src.plan")
 
 -- Commands
@@ -23,6 +24,9 @@ inventory.__index = inventory
 -- Constructs and returns a new instance
 -- of inventory
 -- Fields:
+--   `task_pool`  : An instance of task_pool,
+--                  manages the parallelized
+--                  execution of tasks.
 --   `connected`  : Array of currently visible,
 --                  connected inventory
 --                  peripherals on the network.
@@ -37,9 +41,13 @@ inventory.__index = inventory
 --                  item's maximum stack size.
 function inventory.new
 (contents_path, inputs_path, stacks_path)
+    local task_pool = tskp.new(500)
     local self = setmetatable({
+        task_pool = task_pool,
         connected = {peripheral.find("inventory")},
-        contents  = con.new(contents_path),
+        contents  = con.new(
+                        contents_path, task_pool
+                    ),
         inputs    = inp.new(inputs_path),
         stacks    = sta.new(stacks_path)
     }, inventory)
@@ -77,7 +85,7 @@ end
 -- inventories' databases.
 function inventory:carry_out(plans)
     -- Move the specified items
-    plan.execute_plans(plans)
+    plan.execute_plans(plans, self.task_pool)
     
     -- Update affected chests in memory
     local affected = plan.get_affected_chests(plans)

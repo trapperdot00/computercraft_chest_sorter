@@ -33,22 +33,14 @@ function plan.execute_plan(p)
 end
 
 -- Execute a list of plans in parallel
-function plan.execute_plans(plans)
-    local tasks = {}
+function plan.execute_plans(plans, task_pool)
     for _, p in ipairs(plans) do
-        table.insert(tasks,
-            function()
-                plan.execute_plan(p)
-            end
-        )
-        if #tasks == 100 then
-            parallel.waitForAll(
-                table.unpack(tasks)
-            )
-            tasks = {}
+        local task = function()
+            plan.execute_plan(p)
         end
+        task_pool:add(task)
     end
-    parallel.waitForAll(table.unpack(tasks))
+    task_pool:run()
 end
 
 -- Returns an array containing

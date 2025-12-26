@@ -6,15 +6,19 @@ contents.__index = contents
 
 -- Constructs a new contents instance
 -- Fields:
---     filename: file to read/write
---               contents from/into
---     data    : in memory representation
---               of inventory contents
-function contents.new(filename)
+--     filename : File to read/write
+--                contents from/into.
+--     data     : In memory representation
+--                of inventory contents.
+--     task_pool: An instance of task_pool
+--                that manages the parallelized
+--                execution of tasks.
+function contents.new(filename, task_pool)
     return setmetatable(
         {
-            filename = filename,
-            data     = nil
+            filename  = filename,
+            data      = nil,
+            task_pool = task_pool
         }, contents
     )
 end
@@ -121,15 +125,13 @@ end
 --                  containing slots as keys
 --                  and items as values
 function contents:for_each_chest(func)
-    local tasks = {}
     for inv_id, inv in pairs(self.data) do
-        table.insert(tasks,
-            function()
-                func(inv_id, inv)
-            end
-        )
+        local task = function()
+            func(inv_id, inv)
+        end
+        self.task_pool:add(task)
     end
-    parallel.waitForAll(table.unpack(tasks))
+    self.task_pool:run()
 end
 
 -- Iterates over `contents`'s items
