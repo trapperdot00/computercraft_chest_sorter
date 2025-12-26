@@ -129,9 +129,7 @@ function contents:for_each_chest(func)
         local task = function()
             func(inv_id, inv)
         end
-        self.task_pool:add(task)
     end
-    self.task_pool:run()
 end
 
 -- Iterates over `contents`'s items
@@ -146,8 +144,12 @@ end
 --   -> `item`  : the current item
 function contents:for_each_slot_in(inv_id, contents, func)
     for slot, item in pairs(contents.items) do
-        func(inv_id, slot, item)
+        local task = function()
+            func(inv_id, slot, item)
+        end
+        self.task_pool:add(task)
     end
+    self.task_pool:run()
 end
 
 return contents

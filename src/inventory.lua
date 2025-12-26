@@ -148,9 +148,7 @@ end
 
 -- Updates stack size database
 -- with the items inside
--- the input inventory peripherals
---
--- TODO: optimize, too slow!
+-- the input inventory peripherals.
 function inventory:update_stacksize()
     self:load()
     local func = function(id, slot, item)
