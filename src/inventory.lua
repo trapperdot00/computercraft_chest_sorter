@@ -218,15 +218,7 @@ end
 -- into the input peripherals.
 function inventory:pull()
     local plans = pull.get_plans(self)
-    for _, plan in ipairs(plans) do
-        print(
-            plan.src .. "[" ..
-            tostring(plan.src_slot) ..
-            "] -> " ..
-            plan.dst
-        )
-    end
-    --self:carry_out(plans)
+    self:carry_out(plans)
 end
 
 function inventory:size()
