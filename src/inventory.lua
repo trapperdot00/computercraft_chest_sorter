@@ -101,6 +101,8 @@ function inventory:carry_out(plans)
     end
 end
 
+-- Acquire an iterator that traverses input
+-- inventory slots.
 function inventory:get_input_iterator()
     local contents = {}
     local func = function(inv_id, inv)
@@ -110,6 +112,8 @@ function inventory:get_input_iterator()
     return iter.new(contents)
 end
 
+-- Acquire an iterator that traverses output
+-- inventory slots.
 function inventory:get_output_iterator()
     local contents = {}
     local func = function(inv_id, inv)
