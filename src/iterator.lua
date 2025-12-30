@@ -31,7 +31,7 @@ function iterator.new(contents)
 end
 
 local function update_inv_size(self)
-    if self.inv_i < #self.inv_ids then
+    if self.inv_i <= #self.inv_ids then
         local inv_id   = self.inv_ids[self.inv_i]
         local inv_data = self.data[inv_id]
         self.inv_size  = inv_data.size
