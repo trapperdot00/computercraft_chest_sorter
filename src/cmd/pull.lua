@@ -3,14 +3,18 @@ local pull = {}
 function pull.get_plans(self)
     self:load()
     local plans = {}
-    local empty = function(it)
+    local src_pred = function(it)
+        return it:get().item ~= nil
+    end
+    local dst_pred = function(it)
         return it:get().item == nil
     end
-    local occup = function(it)
-        return not empty(it)
-    end
-    local src_it = self:get_output_iterator(occup)
-    local dst_it = self:get_input_iterator(empty)
+    local src_it = self:get_output_iterator(
+        src_pred
+    )
+    local dst_it = self:get_input_iterator(
+        dst_pred
+    )
     src_it:first()
     dst_it:first()
     while not src_it:is_done() and
