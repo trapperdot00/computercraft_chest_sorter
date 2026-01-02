@@ -11,11 +11,8 @@ local plan    = require("src.plan")
 local tbl     = require("utils.table_utils")
 local tskp    = require("utils.task_pool")
 local planner = require("src.move_planner")
-local debug   = require("utils.debugger")
 
 -- Commands
-local push  = require("src.cmd.push")
-local pull  = require("src.cmd.pull")
 local size  = require("src.cmd.size")
 local usage = require("src.cmd.usage")
 local get   = require("src.cmd.get")
@@ -228,22 +225,40 @@ function inventory:update_stacksize(incl_outputs)
     self.stacks:save_to_file()
 end
 
+local function get_dst_names(self)
+    local dsts = {}
+    local f = function(inv_id, inv_size, inv_items)
+        if not tbl.contains(dsts, inv_id) then
+            table.insert(dsts, inv_id)
+        end
+    end
+    self:for_each_output_chest(f)
+    return dsts
+end
+
 -- Push items from the input peripherals
 -- into the output peripherals.
 function inventory:push()
     self:update_stacksize()
-    local plans = push.get_plans(self)
+    local plans = planner.move(
+        tbl.deepcopy(self.contents.db),
+        self.stacks,
+        self.inputs.data,
+        get_dst_names(self)
+    )
     self:carry_out(plans)
 end
 
 -- Push items from the output peripherals
 -- into the input peripherals.
 function inventory:pull()
-    --self:load()
-    --local srcs = self:get_input_db()
-    --local dsts = self:get_output_db()
-    local plans = pull.get_plans(self)
-    --local plans = planner.plan(srcs, dsts)
+    self:load()
+    local plans = planner.move(
+        tbl.deepcopy(self.contents.db),
+        self.stacks,
+        get_dst_names(self),
+        self.inputs.data
+    )
     self:carry_out(plans)
 end
 

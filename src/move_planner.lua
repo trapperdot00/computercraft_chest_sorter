@@ -1,58 +1,17 @@
+local tbl   = require("utils.table_utils")
 local fiter = require("src.filter_iterator")
 local move_planner = {}
-
--- Create plans for moving items
--- into new slots.
--- TODO: top-up previously moved nonfull slots!
-function move_planner.move
-(db, stacks, src_id, dst_id)
-    local plans = {}
-    local src_pred = function(curr)
-        return curr.item ~= nil
-             and curr.id == src_id
-    end
-    local dst_pred = function(curr)
-        return curr.item == nil
-             and curr.id == dst_id
-    end
-    local src_it = fiter:new(db, src_pred)
-    local dst_it = fiter:new(db, dst_pred)
-    src_it:first()
-    dst_it:first()
-    while not src_it:is_done() and
-          not dst_it:is_done() do
-        local src_val = src_it:get()
-        local dst_val = dst_it:get()
-        local plan = {
-            src      = src_val.id,
-            src_slot = src_val.slot,
-            dst      = dst_val.id,
-            dst_slot = dst_val.slot,
-            count    = src_val.item.count
-        }
-        table.insert(plans, plan)
-        db:add_item(dst_val.id, dst_val.slot,
-            {
-                name  = src_val.item.name,
-                count = src_val.item.count
-            }
-        )
-        db:del_item(src_val.id, src_val.slot)
-        src_it:next()
-        dst_it:next()
-    end
-    return plans
-end
 
 -- Create plans for topping up slots
 -- where there are items whose counts
 -- are less than their stack sizes.
 function move_planner.top_up
-(db, stacks, src_id, dst_id)
+(db, stacks, src_ids, dst_ids)
     local plans = {}
     local src_pred = function(curr)
         local item = curr.item
-        return item ~= nil and curr.id == src_id
+        return item ~= nil 
+            and tbl.contains(src_ids, curr.id)
     end
     local src_it = fiter:new(db, src_pred)
     src_it:first()
@@ -63,9 +22,9 @@ function move_planner.top_up
         local dst_pred = function(curr)
             local item = curr.item
             return item ~= nil
-                and curr.id == dst_id
                 and item.name == src_item.name
                 and item.count < stack
+                and tbl.contains(dst_ids, curr.id)
         end
         local dst_it = fiter:new(db, dst_pred)
         dst_it:first()
@@ -113,6 +72,56 @@ function move_planner.top_up
             end
         end
         src_it:next()
+    end
+    return plans
+end
+
+-- Create plans for moving items from
+-- the input into the output inventories.
+function move_planner.move
+(db, stacks, src_ids, dst_ids)
+    local plans = move_planner.top_up(
+        db, stacks, src_ids, dst_ids
+    )
+    local src_pred = function(curr)
+        return curr.item ~= nil
+            and tbl.contains(src_ids, curr.id)
+    end
+    local dst_pred = function(curr)
+        return curr.item == nil
+            and tbl.contains(dst_ids, curr.id)
+    end
+    local src_it = fiter:new(db, src_pred)
+    local dst_it = fiter:new(db, dst_pred)
+    src_it:first()
+    dst_it:first()
+    while not src_it:is_done() and
+          not dst_it:is_done() do
+        local src_val = src_it:get()
+        local dst_val = dst_it:get()
+        local plan = {
+            src      = src_val.id,
+            src_slot = src_val.slot,
+            dst      = dst_val.id,
+            dst_slot = dst_val.slot,
+            count    = src_val.item.count
+        }
+        table.insert(plans, plan)
+        db:add_item(dst_val.id, dst_val.slot,
+            {
+                name  = src_val.item.name,
+                count = src_val.item.count
+            }
+        )
+        db:del_item(src_val.id, src_val.slot)
+        local topper = move_planner.top_up(
+            db, stacks, src_ids, dst_ids
+        )
+        table.move(
+            topper, 1, #topper, #plans + 1, plans
+        )
+        src_it:next()
+        dst_it:next()
     end
     return plans
 end
