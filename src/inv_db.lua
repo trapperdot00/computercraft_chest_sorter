@@ -14,6 +14,9 @@ function inv_db:del_inv(inv_id) end
 function inv_db:get_inv_ids() end
 function inv_db:get_size(inv_id) end
 
+function inv_db:occupied_slots(inv_id) end
+function inv_db:free_slots(inv_id) end
+
 -- Items
 function inv_db:item_exists(inv_id, slot) end
 function inv_db:add_item(inv_id, slot, item) end
@@ -60,7 +63,6 @@ function inv_db:add_inv(inv_id, size)
 end
 
 function inv_db:del_inv(inv_id)
-    throw_if_inv_doesnt_exist(self, inv_id)
     self.data[inv_id] = nil
 end
 
@@ -71,6 +73,18 @@ end
 function inv_db:get_size(inv_id)
     throw_if_inv_doesnt_exist(self, inv_id)
     return self.data[inv_id].size
+end
+
+function inv_db:occupied_slots(inv_id)
+    throw_if_inv_doesnt_exist(self, inv_id)
+    local inv_items = self:get_items(inv_id)
+    return tbl.size(inv_items)
+end
+
+function inv_db:free_slots(inv_id)
+    throw_if_inv_doesnt_exist(self, inv_id)
+    local inv_size = self:get_size(inv_id)
+    return inv_size - self:occupied_slots(inv_id)
 end
 
 local function
@@ -120,9 +134,6 @@ function inv_db:add_item(inv_id, slot, item)
 end
 
 function inv_db:del_item(inv_id, slot)
-    throw_if_item_doesnt_exist(
-        self, inv_id, slot
-    )
     self.data[inv_id].items[slot] = nil
 end
 
