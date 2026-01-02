@@ -115,9 +115,7 @@ function contents:save_to_file()
         error("could not open file '" ..
             self.filename .. "' for writing", 0)
     end
-    local data = textutils.serialize(
-        self.db.data
-    )
+    local data = textutils.serialize(self.db.data)
     file:write(data)
     file:close()
 end

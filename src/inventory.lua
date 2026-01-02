@@ -20,6 +20,17 @@ local get   = require("src.cmd.get")
 local inventory = {}
 inventory.__index = inventory
 
+local function get_connected_inv_ids()
+    local inv_ids = {}
+    local invs = { peripheral.find("inventory") }
+    for _, inv in ipairs(invs) do
+        table.insert(
+            inv_ids, peripheral.getName(inv)
+        )
+    end
+    return inv_ids
+end
+
 -- Constructs and returns a new instance
 -- of inventory
 -- Fields:
@@ -43,7 +54,7 @@ function inventory.new
     local task_pool = tskp.new(500)
     local self = setmetatable({
         task_pool = task_pool,
-        connected = {peripheral.find("inventory")},
+        connected = get_connected_inv_ids(),
         contents  = con.new(
                         contents_path, task_pool
                     ),
@@ -58,12 +69,9 @@ function inventory.new
 end
 
 function inventory:load(noscan)
-    local eq = function(p, id)
-        return peripheral.getName(p) == id
-    end
     for _, input in ipairs(self.inputs.data) do
         if not tbl.contains(
-            self.connected, input, eq
+            self.connected, input
         ) then
             error(
                 "Input '" .. input ..
