@@ -239,7 +239,6 @@ function inventory:push()
         self.inputs.data,
         get_dst_names(self)
     )
-    print_plans(plans)
     self:carry_out(plans)
 end
 
@@ -253,7 +252,6 @@ function inventory:pull()
         get_dst_names(self),
         self.inputs.data
     )
-    print_plans(plans)
     self:carry_out(plans)
 end
 
@@ -275,7 +273,6 @@ function inventory:get(sought_items)
             #plans + 1, plans
         )
     end
-    print_plans(plans)
     self:carry_out(plans)
 end
 
