@@ -3,6 +3,17 @@ local tbl = require("utils.table_utils")
 local iterator = {}
 iterator.__index = iterator
 
+--==== INTERFACE ====--
+
+function iterator:new(db) end
+
+function iterator:first() end
+function iterator:next() end
+function iterator:get() end
+function iterator:is_done() end
+
+--==== IMPLEMENTATION ====--
+
 -- Constructs a new instance of iterator:
 -- an iterator that traverses the contents of
 -- the inventory state database.
@@ -10,17 +21,17 @@ iterator.__index = iterator
 -- Traversal order: each slot of each inventory.
 --
 -- Fields:
---     `data`    : Table of inventory contents.
+--     `db`      : Instance of inv_db
 --     `inv_ids` : Array of inventory IDs
 --                collected from data's keys.
 --     `inv_size`: Size of current inventory ID.
 --     `inv_i`   : Index of current inventory ID.
 --     `slot`    : Current slot.
-function iterator:new(contents)
+function iterator:new(db)
     local self = setmetatable(
         {
-            data     = contents,
-            inv_ids  = tbl.get_keys(contents),
+            db       = db,
+            inv_ids  = db:get_inv_ids(),
             inv_size = nil,
             inv_i    = nil,
             slot     = nil
@@ -31,9 +42,9 @@ end
 
 local function update_inv_size(self)
     if self.inv_i <= #self.inv_ids then
-        local inv_id   = self.inv_ids[self.inv_i]
-        local inv_data = self.data[inv_id]
-        self.inv_size  = inv_data.size
+        local inv_id    = self.inv_ids[self.inv_i]
+        local inv_items = self.db:get_items(inv_id)
+        self.inv_size   = self.db:get_size(inv_id)
     end
 end
 
@@ -67,10 +78,9 @@ end
 --           otherwise information about
 --           the current item.
 function iterator:get()
-    local inv_id   = self.inv_ids[self.inv_i]
-    local inv_data = self.data[inv_id]
-    local items    = inv_data.items
-    local item     = items[self.slot]
+    local inv_id    = self.inv_ids[self.inv_i]
+    local inv_items = self.db:get_items(inv_id)
+    local item      = inv_items[self.slot]
     return {
         id   = inv_id,
         size = self.inv_size,

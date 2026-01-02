@@ -8,14 +8,15 @@ local push = {}
 -- number of free slots available.
 -- The free slots are the slots that have no items in them
 -- whatsoever.
-function push.get_nonfull_output_chests(self)
+function push.get_nonfull_output_chests(self, db)
     local output_names    = {}
     local free_slots_list = {}
-    for output_name, contents in pairs(self.contents.data) do
-        if not self.inputs:is_input_chest(output_name) then
-            local free_slots = self.contents:get_free_slots(output_name)
+    local inv_ids = db:get_inv_ids()
+    for _, inv_id in ipairs(inv_ids) do
+        if not self.inputs:is_input_chest(inv_id) then
+            local free_slots = db:free_slots(inv_id)
             if free_slots > 0 then
-                table.insert(output_names, output_name)
+                table.insert(output_names, inv_id)
                 table.insert(free_slots_list, free_slots)
             end
         end
@@ -28,23 +29,26 @@ end
 -- to slot indices that denote slots in output chests
 -- that are not empty, nor full.
 -- (as in item's count not zero and is less than its stack size)
-function push.get_nonfull_viable_output_slots(self)
+function push.get_nonfull_viable_output_slots(self, db)
     local item_dst = {}
-    for chest_id, contents in pairs(self.contents.data) do
-        if not self.inputs:is_input_chest(chest_id) then
+    local inv_ids = db:get_inv_ids()
+    for _, src_id in ipairs(inv_ids) do
+        if not self.inputs:is_input_chest(src_id) then
             goto next_chest
         end
-        for slot, item in pairs(contents.items) do
+        local src_items = db:get_items(src_id)
+        for slot, item in pairs(src_items) do
             local maxCount =
                 self.stacks:get_stack_size(
                     item.name
                 )
             local dsts = {}
-            for dst_id, dst_contents in pairs(self.contents.data) do
+            for _, dst_id in ipairs(inv_ids) do
                 if self.inputs:is_input_chest(dst_id) then
                     goto next_dst
                 end
-                for dst_slot, dst_item in pairs(dst_contents.items) do
+                local dst_items = db:get_items(dst_id)
+                for dst_slot, dst_item in pairs(dst_items) do
                     if item.name == dst_item.name
                     and dst_item.count < maxCount then
                         local remaining = maxCount - dst_item.count
@@ -72,36 +76,37 @@ end
 -- to a list of slots.
 function push.get_input_item_slots(self)
     local input_item_slots = {}
-    local work = function(chest_id, slot, item)
+    local work = function(inv_id, inv_size,
+                          slot, item)
         if not input_item_slots[item.name] then
             input_item_slots[item.name] = {}
         end
-        if not input_item_slots[item.name][chest_id] then
-            input_item_slots[item.name][chest_id] = {}
+        if not input_item_slots[item.name][inv_id] then
+            input_item_slots[item.name][inv_id] = {}
         end
-        local entry = input_item_slots[item.name][chest_id]
+        local entry = input_item_slots[item.name][inv_id]
         table.insert(entry, slot)
     end
     self:for_each_input_slot(work)
     return input_item_slots
 end
 
-function push.get_existing_slot_filling_plans(self, contents)
+function push.get_existing_slot_filling_plans(self, db)
     local plans = {}
 
     -- Viable chest data
     -- { item = { ids = { slot1, ... slotN } } }
-    local srcs = push.get_input_item_slots(self)
-    local dsts = push.get_nonfull_viable_output_slots(self)
+    local srcs = push.get_input_item_slots(self, db)
+    local dsts = push.get_nonfull_viable_output_slots(self, db)
 
     -- All items in chests
     local srcs_items = tbl.get_keys(srcs)
     local dsts_items = tbl.get_keys(dsts)
     -- Common items in chests
-    local items      = tbl.get_common_values(
+    local items = tbl.get_common_values(
         srcs_items, dsts_items
     )
-    local items_i    = 1
+    local items_i = 1
 
     while items_i <= #srcs_items do
         -- Get info for current item
@@ -129,8 +134,8 @@ function push.get_existing_slot_filling_plans(self, contents)
             local src_id = src_ids[src_id_i]
             local dst_id = dst_ids[dst_id_i]
             -- Current chest contents
-            local src_data = contents[src_id]
-            local dst_data = contents[dst_id]
+            local src_data = db:get_items(src_id)
+            local dst_data = db:get_items(dst_id)
             -- Slots that contain the current item
             -- inside the current chest
             local src_slots = src_chests[src_id]
@@ -139,8 +144,8 @@ function push.get_existing_slot_filling_plans(self, contents)
             local src_slot = src_slots[src_slot_i]
             local dst_slot = dst_slots[dst_slot_i]
             -- Current item table
-            local src_item = src_data.items[src_slot]
-            local dst_item = dst_data.items[dst_slot]
+            local src_item = db:get_item(src_id, src_slot)
+            local dst_item = db:get_item(dst_id, dst_slot)
 
             -- Slot item capacity to full
             local dst_cap = stack_size - dst_item.count
@@ -166,6 +171,7 @@ function push.get_existing_slot_filling_plans(self, contents)
                 dst_item.count = dst_item.count + cnt
                 if src_item.count == 0 then
                     -- Go to next input slot
+                    db:del_item(src_id, src_slot)
                     src_slot_i = src_slot_i + 1
                     -- Go to next input chest
                     if src_slot_i > #src_slots then
@@ -188,15 +194,15 @@ function push.get_existing_slot_filling_plans(self, contents)
     return plans
 end
 
-function push.get_empty_slot_filling_plans(self, contents)
+function push.get_empty_slot_filling_plans(self, db)
     local plans = {}
-    local dst_ids, dst_slots = push.get_nonfull_output_chests(self)
+    local dst_ids, dst_slots = push.get_nonfull_output_chests(self, db)
     local src_i = 1
     local dst_i = 1
     while src_i <= #self.inputs.data and dst_i <= #dst_ids do
         local src = self.inputs.data[src_i]
-        local src_data = contents[src]
-        for src_slot, item in pairs(src_data.items) do
+        local src_items = db:get_items(src)
+        for src_slot, item in pairs(src_items) do
             local dst = dst_ids[dst_i]
             local plan = {
                 src      = src,
@@ -217,9 +223,9 @@ end
 
 function push.get_plans(self)
     self:load()
-    local contents  = tbl.deepcopy(self.contents.data)
-    local plans     = push.get_existing_slot_filling_plans(self, contents)
-    local tmp_plans = push.get_empty_slot_filling_plans(self, contents)
+    local db = tbl.deepcopy(self.contents.db)
+    local plans = push.get_existing_slot_filling_plans(self, db)
+    local tmp_plans = push.get_empty_slot_filling_plans(self, db)
     table.move(tmp_plans, 1, #tmp_plans, #plans + 1, plans)
     return plans
 end

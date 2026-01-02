@@ -4,11 +4,14 @@ local inp = require("src.inputs")
 local sta = require("src.stacks")
 
 -- Utilities
+local inv_db  = require("src.inv_db")
 local iter    = require("src.iterator")
-local iter_wp = require("src.iterator_wrapper")
+local fiter   = require("src.filter_iterator")
 local plan    = require("src.plan")
 local tbl     = require("utils.table_utils")
 local tskp    = require("utils.task_pool")
+local planner = require("src.move_planner")
+local debug   = require("utils.debugger")
 
 -- Commands
 local push  = require("src.cmd.push")
@@ -105,16 +108,36 @@ function inventory:carry_out(plans)
     end
 end
 
+local function get_db_builder(db)
+    local f = function(inv_id, inv_size, inv_items)
+        db:add_inv(inv_id, inv_size)
+        for slot, item in pairs(inv_items) do
+            db:add_item(inv_id, slot, item)
+        end
+    end
+    return f
+end
+
+function inventory:get_input_db()
+    local db = inv_db.new()
+    local builder = get_db_builder(db)
+    self:for_each_input_chest(builder)
+    return db
+end
+
+function inventory:get_output_db()
+    local db = inv_db.new()
+    local builder = get_db_builder(db)
+    self:for_each_output_chest(builder)
+    return db
+end
+
 -- Acquire an iterator that traverses input
 -- inventory slots.
 function inventory:get_input_iterator(predicate)
-    local contents = {}
-    local func = function(inv_id, inv)
-        contents[inv_id] = inv
-    end
-    self:for_each_input_chest(func)
+    local contents = self:get_input_db()
     if predicate then
-        return iter_wp:new(contents, predicate)
+        return fiter:new(contents, predicate)
     else
         return iter:new(contents)
     end
@@ -123,13 +146,9 @@ end
 -- Acquire an iterator that traverses output
 -- inventory slots.
 function inventory:get_output_iterator(predicate)
-    local contents = {}
-    local func = function(inv_id, inv)
-        contents[inv_id] = inv
-    end
-    self:for_each_output_chest(func)
+    local contents = self:get_output_db()
     if predicate then
-        return iter_wp:new(contents, predicate)
+        return fiter:new(contents, predicate)
     else
         return iter:new(contents)
     end
@@ -139,9 +158,9 @@ end
 -- `func` for a given chest
 -- if it is an input chest.
 function inventory:for_each_input_chest(func)
-    local f = function(inv_id, contents)
+    local f = function(inv_id, inv_size, inv_items)
         if self.inputs:is_input_chest(inv_id) then
-            func(inv_id, contents)
+            func(inv_id, inv_size, inv_items)
         end
     end
     self.contents:for_each_chest(f)
@@ -151,10 +170,10 @@ end
 -- only calls `func` for a given chest
 -- if it is an output chest.
 function inventory:for_each_output_chest(func)
-    local f = function(inv_id, contents)
+    local f = function(inv_id, inv_size, inv_items)
         if not self.inputs:is_input_chest(inv_id)
         then
-            func(inv_id, contents)
+            func(inv_id, inv_size, inv_items)
         end
     end
     self.contents:for_each_chest(f)
@@ -163,9 +182,9 @@ end
 -- Wrapper that iterates over
 -- each input chest's slots.
 function inventory:for_each_input_slot(func)
-    local f = function(chest_id, contents)
+    local f = function(inv_id, inv_size, inv_items)
         self.contents:for_each_slot_in(
-            chest_id, contents, func
+            inv_id, inv_size, inv_items, func
         )
     end
     self:for_each_input_chest(f)
@@ -174,9 +193,9 @@ end
 -- Wrapper that iterates over
 -- each output chest's slots.
 function inventory:for_each_output_slot(func)
-    local f = function(chest_id, contents)
+    local f = function(inv_id, inv_size, inv_items)
         self.contents:for_each_slot_in(
-            chest_id, contents, func
+            inv_id, inv_size, inv_items, func
         )
     end
     self:for_each_output_chest(f)
@@ -192,8 +211,9 @@ end
 --                     slots for stack sizes.
 function inventory:update_stacksize(incl_outputs)
     self:load()
-    local func = function(id, slot, item)
-        local inv  = peripheral.wrap(id)
+    local func = function(inv_id, inv_size,
+                          slot, item)
+        local inv  = peripheral.wrap(inv_id)
         local item = inv.getItemDetail(slot)
         self.stacks:update_or_add(
             item.name, item.maxCount
@@ -211,13 +231,19 @@ end
 function inventory:push()
     self:update_stacksize()
     local plans = push.get_plans(self)
+    debug.print_plans(plans)
     self:carry_out(plans)
 end
 
 -- Push items from the output peripherals
 -- into the input peripherals.
 function inventory:pull()
+    --self:load()
+    --local srcs = self:get_input_db()
+    --local dsts = self:get_output_db()
     local plans = pull.get_plans(self)
+    --local plans = planner.plan(srcs, dsts)
+    debug.print_plans(plans)
     self:carry_out(plans)
 end
 
@@ -239,6 +265,7 @@ end
 
 function inventory:get(sought_items)
     local plans = get.get_plans(self, sought_items)
+    debug.print_plans(plans)
     self:carry_out(plans)
 end
 
