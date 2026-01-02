@@ -4,20 +4,20 @@ local contents = {}
 contents.__index = contents
 
 --==== INTERFACE ====--
-
-function contents.new(filename, task_pool) end
-
-function contents:is_loaded() end
-function contents:scan() end
-function contents:load() end
-function contents:update(inv_id) end
-function contents:save_to_file() end
-
--- Iteration
-function contents:for_each_chest(func) end
-function contents:for_each_slot_in
-                    (inv_id, inv_data, func) end
-
+--
+-- contents.new(filename, task_pool)
+--
+-- contents:is_loaded()
+-- contents:scan()
+-- contents:load()
+-- contents:update(inv_id)
+-- contents:save_to_file()
+--
+-- -- Iteration
+-- contents:for_each_chest(func)
+-- contents:for_each_slot_in
+--                     (inv_id, inv_data, func)
+--
 --==== IMPLEMENTATION ====--
 
 -- Constructs a new contents instance

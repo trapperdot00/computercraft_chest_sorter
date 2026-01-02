@@ -4,25 +4,24 @@ local inv_db = {}
 inv_db.__index = inv_db
 
 --==== INTERFACE ====--
-
-function inv_db.new() end
-
--- Inventories
-function inv_db:inv_exists(inv_id) end
-function inv_db:add_inv(inv_id, size) end
-function inv_db:del_inv(inv_id) end
-function inv_db:get_inv_ids() end
-function inv_db:get_size(inv_id) end
-
-function inv_db:occupied_slots(inv_id) end
-function inv_db:free_slots(inv_id) end
-
--- Items
-function inv_db:item_exists(inv_id, slot) end
-function inv_db:add_item(inv_id, slot, item) end
-function inv_db:del_item(inv_id, slot) end
-function inv_db:get_item(inv_id, slot) end
-function inv_db:get_items(inv_id) end
+--
+-- inv_db.new()
+--
+-- == Inventories ==
+-- inv_db:inv_exists(inv_id)
+-- inv_db:add_inv(inv_id, size)
+-- inv_db:del_inv(inv_id)
+-- inv_db:get_inv_ids()
+-- inv_db:get_size(inv_id)
+-- inv_db:occupied_slots(inv_id)
+-- inv_db:free_slots(inv_id)
+--
+-- == Items ==
+-- inv_db:item_exists(inv_id, slot)
+-- inv_db:add_item(inv_id, slot, item)
+-- inv_db:del_item(inv_id, slot)
+-- inv_db:get_item(inv_id, slot)
+-- inv_db:get_items(inv_id)
 
 --==== IMPLEMENTATION ====--
 

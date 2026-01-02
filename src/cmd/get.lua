@@ -4,15 +4,14 @@ local get = {}
 function get.get_plans(self, sought_items)
     self:load()
     local plans = {}
-    local src_pred = function(it)
-        local data = it:get()
-        local item = data.item
+    local src_pred = function(curr)
+        local item = curr.item
         return item and tbl.contains(
-            sought_items, data.item.name
+            sought_items, item.name
         )
     end
-    local dst_pred = function(it)
-        return it:get().item == nil
+    local dst_pred = function(curr)
+        return curr.item == nil
     end
     local src_it = self:get_output_iterator(
         src_pred

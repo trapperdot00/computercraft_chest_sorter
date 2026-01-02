@@ -44,11 +44,11 @@ function stacks:save_to_file()
     end
 end
 
-function stacks:get_stack_size(item_name)
+function stacks:get(item_name)
     return self.data[item_name]
 end
 
-function stacks:update_or_add(item_name, stack_size)
+function stacks:add(item_name, stack_size)
     self.data[item_name] = stack_size
 end
 

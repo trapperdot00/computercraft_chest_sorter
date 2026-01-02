@@ -3,11 +3,11 @@ local pull = {}
 function pull.get_plans(self)
     self:load()
     local plans = {}
-    local src_pred = function(it)
-        return it:get().item ~= nil
+    local src_pred = function(curr)
+        return curr.item ~= nil
     end
-    local dst_pred = function(it)
-        return it:get().item == nil
+    local dst_pred = function(curr)
+        return curr.item == nil
     end
     local src_it = self:get_output_iterator(
         src_pred

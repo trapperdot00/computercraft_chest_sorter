@@ -215,9 +215,11 @@ function inventory:update_stacksize(incl_outputs)
                           slot, item)
         local inv  = peripheral.wrap(inv_id)
         local item = inv.getItemDetail(slot)
-        self.stacks:update_or_add(
-            item.name, item.maxCount
-        )
+        if item then
+            self.stacks:add(
+                item.name, item.maxCount
+            )
+        end
     end
     self:for_each_input_slot(func)
     if incl_outputs == true then
@@ -231,7 +233,6 @@ end
 function inventory:push()
     self:update_stacksize()
     local plans = push.get_plans(self)
-    debug.print_plans(plans)
     self:carry_out(plans)
 end
 
@@ -243,7 +244,6 @@ function inventory:pull()
     --local dsts = self:get_output_db()
     local plans = pull.get_plans(self)
     --local plans = planner.plan(srcs, dsts)
-    debug.print_plans(plans)
     self:carry_out(plans)
 end
 
@@ -265,7 +265,6 @@ end
 
 function inventory:get(sought_items)
     local plans = get.get_plans(self, sought_items)
-    debug.print_plans(plans)
     self:carry_out(plans)
 end
 

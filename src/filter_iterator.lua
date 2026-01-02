@@ -5,13 +5,13 @@ local filter_iterator = setmetatable(
 filter_iterator.__index = filter_iterator
 
 --==== INTERFACE ====--
-
-function filter_iterator:new(db) end
-
-function filter_iterator:first() end
-function filter_iterator:next() end
-function filter_iterator:get() end
-function filter_iterator:is_done() end
+--
+-- filter_iterator:new(db)
+--
+-- filter_iterator:first()
+-- filter_iterator:next()
+-- filter_iterator:get()
+-- filter_iterator:is_done()
 
 --==== IMPLEMENTATION ====--
 
@@ -25,9 +25,9 @@ function filter_iterator:is_done() end
 --                  predicate.
 -- Parameters:
 --     `contents`: Table of inventory contents.
---     `predicate: Function that takes an
---                 filter_iterator instance
---                 as parameter.
+--     `predicate: Function that takes an element
+--                 returned by get() as
+--                 parameter.
 --                 Returns a boolean value,
 --                 indicating whether the
 --                 current state of the iterator
@@ -45,7 +45,7 @@ end
 -- element that satisfies the predicate.
 function filter_iterator:first()
     iterator.first(self)
-    if not self:predicate() then
+    if not self.predicate(self:get()) then
         self:next()
     end
 end
@@ -55,7 +55,8 @@ end
 function filter_iterator:next()
     repeat
         iterator.next(self)
-    until self:is_done() or self:predicate()
+    until self:is_done()
+    or self.predicate(self:get())
 end
 
 return filter_iterator

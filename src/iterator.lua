@@ -4,14 +4,14 @@ local iterator = {}
 iterator.__index = iterator
 
 --==== INTERFACE ====--
-
-function iterator:new(db) end
-
-function iterator:first() end
-function iterator:next() end
-function iterator:get() end
-function iterator:is_done() end
-
+--
+-- iterator:new(db)
+--
+-- iterator:first()
+-- iterator:next()
+-- iterator:get()
+-- iterator:is_done()
+--
 --==== IMPLEMENTATION ====--
 
 -- Constructs a new instance of iterator:
