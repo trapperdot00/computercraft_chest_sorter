@@ -8,6 +8,8 @@ local move_planner = {}
 function move_planner.top_up
 (db, stacks, src_ids, dst_ids, item_name)
     local plans = {}
+    -- Any slot from an input chest that
+    -- contains an item with the given name
     local src_pred = function(curr)
         local item = curr.item
         return item ~= nil 
@@ -21,6 +23,9 @@ function move_planner.top_up
         local src_val  = src_it:get()
         local src_item = src_val.item
         local stack    = stacks:get(src_item.name)
+        -- Any slot from an output chest that
+        -- contains an item with the given name
+        -- and its not full
         local dst_pred = function(curr)
             local item = curr.item
             return item ~= nil
@@ -85,12 +90,15 @@ function move_planner.move
     local plans = move_planner.top_up(
         db, stacks, src_ids, dst_ids, item_name
     )
+    -- Any slot from an input chest that
+    -- contains an item with the given name
     local src_pred = function(curr)
         return curr.item ~= nil
             and tbl.contains(src_ids, curr.id)
             and (item_name == nil or
                 curr.item.name == item_name)
     end
+    -- Any empty slot from an output chest
     local dst_pred = function(curr)
         return curr.item == nil
             and tbl.contains(dst_ids, curr.id)
