@@ -12,10 +12,6 @@ local tbl     = require("utils.table_utils")
 local tskp    = require("utils.task_pool")
 local planner = require("src.move_planner")
 
--- Commands
-local size  = require("src.cmd.size")
-local usage = require("src.cmd.usage")
-
 local inventory = {}
 inventory.__index = inventory
 
@@ -243,7 +239,6 @@ function inventory:push()
         self.inputs.data,
         get_dst_names(self)
     )
-    print_plans(plans)
     self:carry_out(plans)
 end
 
@@ -257,7 +252,6 @@ function inventory:pull()
         get_dst_names(self),
         self.inputs.data
     )
-    print_plans(plans)
     self:carry_out(plans)
 end
 
@@ -279,24 +273,7 @@ function inventory:get(sought_items)
             #plans + 1, plans
         )
     end
-    print_plans(plans)
     self:carry_out(plans)
-end
-
-function inventory:size()
-    local in_slots, out_slots = size.size(self)
-    local full_slots = in_slots + out_slots
-    print("[IN] :", in_slots)
-    print("[OUT]:", out_slots)
-    print("[ALL]:", full_slots)
-end
-
-function inventory:usage()
-    local total, used = usage.usage(self)
-    local percent = (used / total) * 100
-    print("[USED]:", used)
-    print("[ALL] :", total)
-    print("["..tostring(percent).."%]")
 end
 
 function inventory:count(sought_items)
@@ -343,6 +320,48 @@ function inventory:find(sought_items)
             print(item, "->", inv_id)
         end
     end
+end
+
+function inventory:size()
+    self:load(true)
+    local db = self.contents.db
+    local inputs = self.inputs
+    local src_slots = 0
+    local dst_slots = 0
+    local inv_ids = db:get_inv_ids()
+    for _, inv_id in ipairs(inv_ids) do
+        local inv_size = db:get_size(inv_id)
+        if inputs:is_input_chest(inv_id) then
+            src_slots = src_slots + inv_size
+        else
+            dst_slots = dst_slots + inv_size
+        end
+    end
+    local all_slots = src_slots + dst_slots
+    print("[IN] :", src_slots)
+    print("[OUT]:", dst_slots)
+    print("[ALL]:", all_slots)
+end
+
+function inventory:usage()
+    self:load(true)
+    local db = self.contents.db
+    local inputs = self.inputs
+    local all = 0
+    local occupied = 0
+    local inv_ids = db:get_inv_ids()
+    for _, inv_id in ipairs(inv_ids) do
+        if not inputs:is_input_chest(inv_id) then
+            local inv_size = db:get_size(inv_id)
+            local full = db:occupied_slots(inv_id)
+            all = all + inv_size
+            occupied = occupied + full
+        end
+    end
+    local percent = (occupied / all) * 100
+    print("[USED]:", occupied)
+    print("[ALL] :", all)
+    print("["..tostring(percent).."%]")
 end
 
 function inventory:scan()
