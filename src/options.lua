@@ -32,8 +32,10 @@ local function parse_flag(_arg, flags)
     for flag, _ in pairs(flags)
     do
         if _arg == "--"..flag then
-            flags[flag] = true
-            return true
+            if flags[flag] ~= true then
+                flags[flag] = true
+                return true
+            end
         end
     end
     return false
@@ -46,8 +48,12 @@ local function parse_varopts(_arg, varopts)
             "--"..varopt..'=', ""
         )
         if cnt > 0 then
-            varopts[varopt] = str.split(vals, ',')
-            return true
+            if #varopts[varopt] == 0 then
+                varopts[varopt] = str.split(
+                    vals, ','
+                )
+                return true
+            end
         end
     end
     return false
