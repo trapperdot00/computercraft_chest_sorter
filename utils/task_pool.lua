@@ -15,7 +15,7 @@ function task_pool.new(max_bufsize)
     return setmetatable(
         {
             tasks       = {},
-            max_bufsize = max_bufsize or 100
+            max_bufsize = max_bufsize or 256
         }, task_pool
     )
 end

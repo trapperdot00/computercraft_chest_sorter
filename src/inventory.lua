@@ -44,10 +44,7 @@ end
 --                  item's maximum stack size.
 function inventory.new
 (contents_path, inputs_path, stacks_path)
-    -- WARNING: The task buffer can cause
-    -- hangs if it is too high!
-    local task_buffer = 250
-    local task_pool = tskp.new(task_buffer)
+    local task_pool = tskp.new()
     local self = setmetatable({
         task_pool = task_pool,
         connected = get_connected_inv_ids(),
@@ -160,18 +157,15 @@ function inventory:update_stacksize(incl_outputs)
         local items = in_db:get_items(inv_id)
         local inv = peripheral.wrap(inv_id)
         for slot, _ in pairs(items) do
-            local s = slot
-            local i = inv
-            self.task_pool:add(
-                function()
-                    local item = i.getItemDetail(s)
-                    self.stacks:add(
-                        item.name, item.maxCount
-                    )
-                end
-            )
+            self.task_pool:add(function()
+                local item = inv.getItemDetail(slot)
+                self.stacks:add(
+                    item.name, item.maxCount
+                )
+            end)
         end
     end
+    self.task_pool:run()
     if incl_outputs == true then
         local out_db = self:get_output_db()
         local out_ids = out_db:get_inv_ids()
@@ -179,16 +173,12 @@ function inventory:update_stacksize(incl_outputs)
             local items = out_db:get_items(inv_id)
             local inv = peripheral.wrap(inv_id)
             for slot, _ in pairs(items) do
-                local s = slot
-                local i = inv
-                self.task_pool:add(
-                    function()
-                        local item = i.getItemDetail(s)
-                        self.stacks:add(
-                            item.name, item.maxCount
-                        )
-                    end
-                )
+                self.task_pool:add(function()
+                    local item = inv.getItemDetail(slot)
+                    self.stacks:add(
+                        item.name, item.maxCount
+                    )
+                end)
             end
         end
     end
