@@ -95,9 +95,13 @@ function inventory:carry_out(plans)
     -- Update affected chests in memory
     local affected = plan.affected_chests(plans)
     for _, id in ipairs(affected) do
-        print("updating", id)
-        self.contents:update(id)
+        local task = function()
+            print("updating", id)
+            self.contents:update(id)
+        end
+        self.task_pool:add(task)
     end
+    self.task_pool:run()
 
     -- Update chest database file
     if #affected > 0 then
@@ -109,75 +113,35 @@ function inventory:carry_out(plans)
     end
 end
 
-local function get_db_builder(db)
-    local f = function(inv_id, inv_size, inv_items)
-        db:add_inv(inv_id, inv_size)
-        for slot, item in pairs(inv_items) do
-            db:add_item(inv_id, slot, item)
+local function get_db(db, inputs, is_input)
+    local in_db = inv_db.new()
+    local inv_ids = db:get_inv_ids()
+    for _, inv_id in ipairs(inv_ids) do
+        if is_input == inputs:is_input_chest(inv_id)
+        then
+            local inv_size = db:get_size(inv_id)
+            local items = db:get_items(inv_id)
+            in_db:add_inv(inv_id, inv_size)
+            for slot, item in pairs(items) do
+                in_db:add_item(
+                    inv_id, slot, item
+                )
+            end
         end
     end
-    return f
+    return in_db
 end
 
 function inventory:get_input_db()
-    local db = inv_db.new()
-    local builder = get_db_builder(db)
-    self:for_each_input_chest(builder)
-    return db
+    return get_db(
+        self.contents.db, self.inputs, true
+    )
 end
 
 function inventory:get_output_db()
-    local db = inv_db.new()
-    local builder = get_db_builder(db)
-    self:for_each_output_chest(builder)
-    return db
-end
-
--- Wrapper for `for_each_chest` that only calls
--- `func` for a given chest
--- if it is an input chest.
-function inventory:for_each_input_chest(func)
-    local f = function(inv_id, inv_size, inv_items)
-        if self.inputs:is_input_chest(inv_id) then
-            func(inv_id, inv_size, inv_items)
-        end
-    end
-    self.contents:for_each_chest(f)
-end
-
--- Wrapper for `for_each_chest` that
--- only calls `func` for a given chest
--- if it is an output chest.
-function inventory:for_each_output_chest(func)
-    local f = function(inv_id, inv_size, inv_items)
-        if not self.inputs:is_input_chest(inv_id)
-        then
-            func(inv_id, inv_size, inv_items)
-        end
-    end
-    self.contents:for_each_chest(f)
-end
-
--- Wrapper that iterates over
--- each input chest's slots.
-function inventory:for_each_input_slot(func)
-    local f = function(inv_id, inv_size, inv_items)
-        self.contents:for_each_slot_in(
-            inv_id, inv_size, inv_items, func
-        )
-    end
-    self:for_each_input_chest(f)
-end
-
--- Wrapper that iterates over
--- each output chest's slots.
-function inventory:for_each_output_slot(func)
-    local f = function(inv_id, inv_size, inv_items)
-        self.contents:for_each_slot_in(
-            inv_id, inv_size, inv_items, func
-        )
-    end
-    self:for_each_output_chest(f)
+    return get_db(
+        self.contents.db, self.inputs, false
+    )
 end
 
 -- Updates stack size database
@@ -232,14 +196,8 @@ function inventory:update_stacksize(incl_outputs)
 end
 
 local function get_dst_names(self)
-    local dsts = {}
-    local f = function(inv_id, inv_size, inv_items)
-        if not tbl.contains(dsts, inv_id) then
-            table.insert(dsts, inv_id)
-        end
-    end
-    self:for_each_output_chest(f)
-    return dsts
+    local out_db = self:get_output_db()
+    return out_db:get_inv_ids()
 end
 
 local function print_plans(plans)

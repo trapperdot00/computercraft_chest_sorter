@@ -13,11 +13,6 @@ contents.__index = contents
 -- contents:update(inv_id)
 -- contents:save_to_file()
 --
--- -- Iteration
--- contents:for_each_chest(func)
--- contents:for_each_slot_in
---                     (inv_id, inv_data, func)
---
 --==== IMPLEMENTATION ====--
 
 -- Constructs a new contents instance
@@ -122,46 +117,6 @@ function contents:save_to_file()
     local data = textutils.serialize(self.db.data)
     file:write(data)
     file:close()
-end
-
--- Iterates over each chest contained in the
--- contents database in memory,
--- and calls `func` for each one in parallel.
---
--- `func`: a function that takes these parameters:
---     -> `inv_id`   : inventory ID
---     -> `inv_size` : inventory slot count
---     -> `inv_items`: an associative table
---                     containing slots as keys
---                     and items as values
-function contents:for_each_chest(func)
-    local inv_ids = self.db:get_inv_ids()
-    for _, inv_id in ipairs(inv_ids) do
-        local inv_size = self.db:get_size(inv_id)
-        local inv_items = self.db:get_items(inv_id)
-        func(inv_id, inv_size, inv_items)
-    end
-end
-
--- Iterates over `contents`'s items
--- (each filled slot),
--- calling `func` with each iteration
--- in parallel.
---
--- `func`: a function that takes these parameters:
---   -> `inv_id`  : inventory ID
---   -> `inv_size`: inventory slot count
---   -> `slot`    : slot's index
---   -> `item`    : item
-function contents:for_each_slot_in
-(inv_id, inv_size, inv_items, func)
-    for slot, item in pairs(inv_items) do
-        local task = function()
-            func(inv_id, inv_size, slot, item)
-        end
-        self.task_pool:add(task)
-    end
-    self.task_pool:run()
 end
 
 return contents
