@@ -46,10 +46,7 @@ function inventory.new
 (contents_path, inputs_path, stacks_path)
     -- WARNING: The task buffer can cause
     -- hangs if it is too high!
-    -- I've set it to the maximum that our
-    -- server can handle.
-    -- Don't know what causes this.
-    local task_buffer = 258
+    local task_buffer = 250
     local task_pool = tskp.new(task_buffer)
     local self = setmetatable({
         task_pool = task_pool,
