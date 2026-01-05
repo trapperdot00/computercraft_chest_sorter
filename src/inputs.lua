@@ -1,4 +1,3 @@
-local cfg       = require("utils.config_reader")
 local tbl       = require("utils.table_utils")
 local configure = require("src.configure")
 
@@ -25,9 +24,10 @@ end
 -- Does nothing if already loaded.
 function inputs:load()
     if self:is_loaded() then return end
-    if cfg.is_valid_seque_file(self.filename) then
-        self.data = cfg.read_seque(
-            self.filename, ""
+    local f = io.open(self.filename)
+    if f then
+        self.data = textutils.unserialize(
+            f:read('a')
         )
     else
         self.data = {}
@@ -44,7 +44,16 @@ function inputs:configure()
 end
 
 function inputs:save_to_file()
-    cfg.write_seque(self.data, self.filename)
+    local file = io.open(self.filename, "w")
+    if not file then
+        error(
+            "cannot open file '" ..
+            self.filename ..
+            "' for writing", 0
+        )
+    end
+    file:write(textutils.serialize(self.data))
+    file:close()
 end
 
 function inputs:size()

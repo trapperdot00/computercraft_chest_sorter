@@ -1,6 +1,5 @@
 local str = require("utils.string_utils")
 local tbl = require("utils.table_utils")
-local cfg = require("utils.config_reader")
 
 local configure = {}
 
@@ -75,9 +74,17 @@ end
 function configure.run(filename)
     local inputs = {}
     if fs.exists(filename) then
-        if cfg.is_valid_seque_file(filename) then
-            inputs = cfg.read_seque(filename, "")
+        local f = io.open(filename)
+        if not f then
+            error(
+                "cannot open file '" ..
+                filename ..
+                "' for reading", 0
+            )
         end
+        inputs = textutils.unserialize(
+            f:read('a')
+        )
     end
     local width, height = term.getSize()
     local self = {
