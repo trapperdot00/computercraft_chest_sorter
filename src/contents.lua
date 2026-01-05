@@ -69,14 +69,18 @@ end
 function contents:scan()
     local invs = { peripheral.find("inventory") }
     for _, inv in ipairs(invs) do
-        local inv_id    = peripheral.getName(inv)
-        local inv_size  = inv.size()
-        local inv_items = inv.list()
-        self.db:add_inv(inv_id, inv_size)
-        for slot, item in pairs(inv_items) do
-            self.db:add_item(inv_id, slot, item)
+        local task = function()
+            local inv_id    = peripheral.getName(inv)
+            local inv_size  = inv.size()
+            local inv_items = inv.list()
+            self.db:add_inv(inv_id, inv_size)
+            for slot, item in pairs(inv_items) do
+                self.db:add_item(inv_id, slot, item)
+            end
         end
+        self.task_pool:add(task)
     end
+    self.task_pool:run()
 end
 
 -- Tries to load contents from file,

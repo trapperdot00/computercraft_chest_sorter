@@ -44,7 +44,13 @@ end
 --                  item's maximum stack size.
 function inventory.new
 (contents_path, inputs_path, stacks_path)
-    local task_pool = tskp.new(500)
+    -- WARNING: The task buffer can cause
+    -- hangs if it is too high!
+    -- I've set it to the maximum that our
+    -- server can handle.
+    -- Don't know what causes this.
+    local task_buffer = 258
+    local task_pool = tskp.new(task_buffer)
     local self = setmetatable({
         task_pool = task_pool,
         connected = get_connected_inv_ids(),
@@ -52,7 +58,9 @@ function inventory.new
                         contents_path, task_pool
                     ),
         inputs    = inp.new(inputs_path),
-        stacks    = sta.new(stacks_path)
+        stacks    = sta.new(
+                        stacks_path, task_pool
+                    )
     }, inventory)
     if #self.connected == 0 then
         error("No chests found on the network!", 0)
@@ -185,23 +193,45 @@ end
 --                     slots for stack sizes.
 function inventory:update_stacksize(incl_outputs)
     self:load()
-    local func = function(inv_id, inv_size,
-                          slot, item)
-        if not tbl.contains(
-            self.connected, inv_id
-        ) then return end
-        local inv  = peripheral.wrap(inv_id)
-        local item = inv.getItemDetail(slot)
-        if item then
-            self.stacks:add(
-                item.name, item.maxCount
+    local in_db = self:get_input_db()
+    local in_ids = in_db:get_inv_ids()
+    for _, inv_id in ipairs(in_ids) do
+        local items = in_db:get_items(inv_id)
+        local inv = peripheral.wrap(inv_id)
+        for slot, _ in pairs(items) do
+            local s = slot
+            local i = inv
+            self.task_pool:add(
+                function()
+                    local item = i.getItemDetail(s)
+                    self.stacks:add(
+                        item.name, item.maxCount
+                    )
+                end
             )
         end
     end
-    self:for_each_input_slot(func)
     if incl_outputs == true then
-        self:for_each_output_slot(func)
+        local out_db = self:get_output_db()
+        local out_ids = out_db:get_inv_ids()
+        for _, inv_id in ipairs(out_ids) do
+            local items = out_db:get_items(inv_id)
+            local inv = peripheral.wrap(inv_id)
+            for slot, _ in pairs(items) do
+                local s = slot
+                local i = inv
+                self.task_pool:add(
+                    function()
+                        local item = i.getItemDetail(s)
+                        self.stacks:add(
+                            item.name, item.maxCount
+                        )
+                    end
+                )
+            end
+        end
     end
+    self.task_pool:run()
 end
 
 local function get_dst_names(self)
@@ -379,9 +409,13 @@ function inventory:usage()
 end
 
 function inventory:scan()
+    print("starting scan")
     self.contents:scan()
+    print("saving inventory to file")
     self.contents:save_to_file()
+    print("updating stack sizes")
     self:update_stacksize(true)
+    print("saving stacks to file")
     self.stacks:save_to_file()
 end
 
