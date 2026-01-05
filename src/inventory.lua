@@ -5,8 +5,6 @@ local sta = require("src.stacks")
 
 -- Utilities
 local inv_db  = require("src.inv_db")
-local iter    = require("src.iterator")
-local fiter   = require("src.filter_iterator")
 local plan    = require("src.plan")
 local tbl     = require("utils.table_utils")
 local tskp    = require("utils.task_pool")
@@ -261,7 +259,7 @@ function inventory:get(sought_items)
     local db_cpy = tbl.deepcopy(self.contents.db)
     local plans = {}
     for _, item_name in ipairs(sought_items) do
-        local part_plans = planner.move(
+        local item_plans = planner.move(
             db_cpy,
             self.stacks,
             get_dst_names(self),
@@ -269,7 +267,7 @@ function inventory:get(sought_items)
             item_name
         )
         table.move(
-            part_plans, 1, #part_plans,
+            item_plans, 1, #item_plans,
             #plans + 1, plans
         )
     end
@@ -278,46 +276,62 @@ end
 
 function inventory:count(sought_items)
     self:load(true)
-    for _, item in ipairs(sought_items) do
-        local cnt = 0
-        local pred = function(curr)
-            return curr.item ~= nil
-                and curr.item.name == item
+    local out_db = self:get_output_db()
+    local inv_ids = out_db:get_inv_ids()
+    -- { ITEM_NAME = COUNT }
+    local item_cnt = {}
+    for _, sought_item in ipairs(sought_items) do
+        for _, inv_id in ipairs(inv_ids) do
+            local inv_items = out_db:get_items(
+                inv_id
+            )
+            for slot, item in pairs(inv_items) do
+                if item.name == sought_item then
+                    if item_cnt[item.name] == nil
+                    then
+                        item_cnt[item.name] = 0
+                    end
+                    item_cnt[item.name] =
+                        item_cnt[item.name] +
+                        item.count
+                end
+            end
         end
-        local it = fiter:new(
-            self:get_output_db(), pred
-        )
-        it:first()
-        while not it:is_done() do
-            cnt = cnt + it:get().item.count
-            it:next()
-        end
-        print(item, cnt)
+    end
+    for item, count in pairs(item_cnt) do
+        print(item, count)
     end
 end
 
 function inventory:find(sought_items)
     self:load(true)
-    for _, item in ipairs(sought_items) do
-        local inv_ids = {}
-        local pred = function(curr)
-            return curr.item ~= nil
-                and curr.item.name == item
-        end
-        local it = fiter:new(
-            self:get_output_db(), pred
-        )
-        it:first()
-        while not it:is_done() do
-            local inv_id = it:get().id
-            if not tbl.contains(inv_ids, inv_id)
-            then
-                table.insert(inv_ids, inv_id)
+    local out_db = self:get_output_db()
+    local inv_ids = out_db:get_inv_ids()
+    -- { ITEM_NAME = { INV_ID } }
+    local item_pos = {}
+    for _, sought_item in ipairs(sought_items) do
+        for _, inv_id in pairs(inv_ids) do
+            local inv_items = out_db:get_items(
+                inv_id
+            )
+            for slot, item in pairs(inv_items) do
+                if item.name == sought_item then
+                    if item_pos[item.name] == nil
+                    then
+                        item_pos[item.name] = {}
+                    end
+                    table.insert(
+                        item_pos[item.name],
+                        inv_id
+                    )
+                    break
+                end
             end
-            it:next()
         end
+    end
+    for item_name, inv_ids in pairs(item_pos) do
         for _, inv_id in ipairs(inv_ids) do
-            print(item, "->", inv_id)
+            print(item_name, "->", inv_id)
         end
     end
 end
