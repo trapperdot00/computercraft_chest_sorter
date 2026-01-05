@@ -20,13 +20,17 @@ function plan.execute_plan(p)
     local count    = p.count
     local dst_slot = p.dst_slot
 
-    local src_chest = peripheral.wrap(src)
+    local src_inv = peripheral.wrap(src)
     if count == nil then
-        src_chest.pushItems(dst, src_slot)
+        return src_inv.pushItems(
+            dst, src_slot
+        )
     elseif dst_slot == nil then
-        src_chest.pushItems(dst, src_slot, count)
+        return src_inv.pushItems(
+            dst, src_slot, count
+        )
     else
-        src_chest.pushItems(
+        return src_inv.pushItems(
             dst, src_slot, count, dst_slot
         )
     end
