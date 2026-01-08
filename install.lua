@@ -13,6 +13,7 @@ data = {
     ["src"] = {
         "configure.lua",
         "contents.lua",
+        "input_db.lua",
         "inputs.lua",
         "inv_db.lua",
         "inventory.lua",
