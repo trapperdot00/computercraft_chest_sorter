@@ -8,7 +8,8 @@ site = domain..'/'..fs.combine(user, repo, ref)
 -- Directory names as keys, filenames as values
 data = {
     ["."] = {
-        "main.lua"
+        "main.lua",
+        "README.md"
     },
     ["src"] = {
         "configure.lua",
